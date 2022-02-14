@@ -32,7 +32,7 @@ def main(N=2):
     # g = pp.CartGrid([N]*3, [1]*3)
 
     g.compute_geometry()
-    g.edge_nodes, g.face_edges = pg.compute_edges(g)
+    pg.compute_edges(g)
 
     grad = g.edge_nodes.T
     curl = g.face_edges.T
