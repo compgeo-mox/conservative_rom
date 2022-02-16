@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.sparse as sps
-import time
 
 import porepy as pp
 import pygeon as pg
@@ -12,12 +11,17 @@ def main():
     network = pp.fracture_importer.network_2d_from_csv(file_name, domain=domain)
 
     # set the mesh size
-    mesh_size = 1e-1
+    mesh_size = 1
     mesh_kwargs = {"mesh_size_frac": mesh_size, "mesh_size_min": mesh_size / 20}
 
     # create the grid bucket
     gb = network.mesh(mesh_kwargs)
     pg.compute_edges(gb)
+
+    div  = pg.div(gb)
+    curl = pg.curl(gb)
+
+    assert((div * curl).nnz == 0)
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=9999)
