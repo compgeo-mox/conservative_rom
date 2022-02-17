@@ -6,7 +6,7 @@ import pygeon as pg
 
 def main():
 
-    file_name = "network.csv"
+    file_name = "network2.csv"
     domain = {"xmin": 0, "xmax": 1, "ymin": 0, "ymax": 1}
     network = pp.fracture_importer.network_2d_from_csv(file_name, domain=domain)
 
@@ -20,8 +20,10 @@ def main():
 
     div  = pg.div(gb)
     curl = pg.curl(gb)
+    grad = pg.grad(gb)
 
-    assert((div * curl).nnz == 0)
+    assert (div * curl).nnz == 0
+    assert (curl * grad).nnz == 0
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=9999)
