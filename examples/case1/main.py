@@ -34,9 +34,9 @@ def main(N=2):
     g.compute_geometry()
     pg.compute_edges(g)
 
-    grad = g.edge_nodes.T
-    curl = g.face_edges.T
-    div  = g.cell_faces.T
+    grad = pg.grad(g)
+    curl = pg.curl(g)
+    div  = pg.div(g)
 
     # Testing
     assert (curl * grad).nnz == 0
@@ -80,7 +80,8 @@ def main(N=2):
     b = - curl.T*M*q_f
 
     if g.dim == 2:
-        A = sps.bmat([[A, grad], [grad.T, 1]], format=A.getformat())
+        vals = np.ones(A.size[1], 1)
+        A = sps.bmat([[A, vals], [vals.T, 1]], format=A.getformat())
         b = np.append(b, [0.])
         sigma = sps.linalg.spsolve(A, b)[:-1]
     else:
@@ -106,4 +107,4 @@ def main(N=2):
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=9999)
-    [main(N) for N in [2]]
+    [main(N) for N in [6]]
