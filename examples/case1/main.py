@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
 import time
+import pyamg
 
 import porepy as pp
 import pygeon as pg
@@ -24,11 +25,11 @@ def reference_solution(data_key, g, data, discr):
 def main(N=2):
 
     # 2D
-    # g = pp.StructuredTriangleGrid([N]*2, [1]*2)
+    g = pp.StructuredTriangleGrid([N]*2, [1]*2)
     # g = pp.CartGrid([N]*2, [1]*2)
 
     # 3D
-    g = pp.StructuredTetrahedralGrid([N]*3, [1]*3)
+    # g = pp.StructuredTetrahedralGrid([N]*3, [1]*3)
     # g = pp.CartGrid([N]*3, [1]*3)
 
     g.compute_geometry()
@@ -62,11 +63,17 @@ def main(N=2):
     print("step 1")
     start_time = time.time()
 
-    h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
-    BBt = div*h_scaling*div.T
+    # Create a TPFA method
+    h_perp = np.zeros(g.num_faces)
+    for (face, cell) in zip(*g.cell_faces.nonzero()):
+        h_perp[face] += np.linalg.norm(g.face_centers[:,face] - g.cell_centers[:, cell])
+    L_inv = sps.dia_matrix((g.face_areas / h_perp, 0), (g.num_faces, g.num_faces))
+    
+    # Set up and solve first problem
+    BBt = div*L_inv*div.T
 
     p_f = sps.linalg.spsolve(BBt, f)
-    q_f = h_scaling*div.T*p_f
+    q_f = L_inv*div.T*p_f
 
     print("done in", time.time() - start_time)
 
@@ -79,14 +86,17 @@ def main(N=2):
     A = curl.T*M*curl
     b = - curl.T*M*q_f
 
-    if g.dim == 2:
-        vals = np.ones(A.size[1], 1)
+    # Test if we are in the 2D Dirichlet case.
+    if np.allclose(A * np.ones(A.shape[1]), 0):
+        vals = np.ones((A.shape[1], 1))
         A = sps.bmat([[A, vals], [vals.T, 1]], format=A.getformat())
-        b = np.append(b, [0.])
+        b = np.append(b, 0.)
         sigma = sps.linalg.spsolve(A, b)[:-1]
     else:
-        A += grad*h_scaling*grad.T
-        sigma = sps.linalg.spsolve(A, b)
+        A += grad*grad.T
+        # sigma = sps.linalg.spsolve(A, b)
+        amg = pyamg.ruge_stuben_solver(A.tocsr())
+        sigma = amg.solve(b, tol=1e-14)
 
     print("done in", time.time() - start_time)
 
@@ -94,7 +104,7 @@ def main(N=2):
     print("step 3")
     start_time = time.time()
     q = q_f + curl*sigma
-    p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
+    p = sps.linalg.spsolve(BBt, div*L_inv*M*q)
     print("done in", time.time() - start_time)
 
     # verification
