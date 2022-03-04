@@ -6,7 +6,7 @@ import pygeon as pg
 
 class HodgeSolver():
 
-    def __init__(self, gb, discr, data, data_key, if_check=True):
+    def __init__(self, gb, discr, data=None, data_key="flow", if_check=True):
         self.gb = gb
         self.data = data
         self.data_key = data_key
@@ -20,7 +20,7 @@ class HodgeSolver():
             assert (self.curl * self.grad).nnz == 0
             assert (self.div * self.curl).nnz == 0
 
-        self.mass = pg.hdiv_mass(gb, discr, data, data_key)
+        self.mass = pg.hdiv_mass(gb, discr, data)
 
         #BBt = self.div*self.h_scaling*self.div.T
         self.BBt = sps.linalg.splu((self.div*self.div.T).tocsc())
@@ -36,7 +36,10 @@ class HodgeSolver():
         return self.step3(q_f, sigma)
 
     def step1(self):
-        f = self.data[pp.PARAMETERS][self.data_key]["source"]
+        if isinstance(self.gb, pp.Grid):
+            f = self.data[pp.PARAMETERS][self.data_key]["source"]
+        elif isinstance(self.gb, pp.GridBucket):
+            f = self.assemble_source()
 
         p_f = self.BBt.solve(f)
         #q_f = h_scaling*self.div.T*p_f
@@ -62,3 +65,12 @@ class HodgeSolver():
         #p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
         p = self.BBt.solve(self.div*self.mass*q)
         return q, p
+
+
+    def assemble_source(self):
+
+        f = []
+        for _, d in self.gb:
+            f.append(d[pp.PARAMETERS]["flow"]["source"])
+
+        return np.concatenate(f)

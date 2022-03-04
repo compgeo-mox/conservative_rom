@@ -6,6 +6,16 @@ import pyamg
 import porepy as pp
 import pygeon as pg
 
+import sys
+sys.path.insert(0, "src/")
+from hodge_solver import HodgeSolver
+
+"""
+    Case 1 is a fixed-dimensional case, designed for testing
+    MFEM and MVEM in 2D or 3D.
+"""
+
+
 def reference_solution(data_key, g, data, discr):
     A, b_flow = discr.assemble_matrix_rhs(g, data)
 
@@ -35,84 +45,45 @@ def main(N=2):
     g.compute_geometry()
     pg.compute_edges(g)
 
-    grad = pg.grad(g)
-    curl = pg.curl(g)
-    div  = pg.div(g)
+    data, data_key = setup_data(g)
 
-    # Testing
-    assert (curl * grad).nnz == 0
-    assert (div * curl).nnz == 0
-    if g.dim == 3:
-        assert (abs(g.edge_nodes) * abs(g.face_edges) - 2 * g.face_nodes).nnz == 0, "Edges do not preserve connectivity"
+    discr = pp.RT0(data_key)
+    # discr = pp.MVEM(data_key)
 
+    hs = HodgeSolver(g, discr, data, data_key)
+
+    # def linalg_solve(A, b):
+    #     amg = pyamg.ruge_stuben_solver(A.tocsr())
+    #     return amg.solve(b, tol=1e-14)
+
+    # q, p = hs.solve(linalg_solve)
+    q, p = hs.solve()
+
+    # verification
+    q_ref, p_ref = reference_solution(data_key, g, data, discr)
+
+    f = data[pp.PARAMETERS][data_key]['source']
+
+    print("Pressure error: {:.2E}".format(np.linalg.norm(p-p_ref)))
+    print("Flux error:     {:.2E}".format(np.linalg.norm(q-q_ref)))
+    print("Mass loss:      {:.2E}".format(np.linalg.norm(hs.div*q - f)))
+
+
+def setup_data(g):
     # Set up discretization
-    perm = pp.SecondOrderTensor(kxx=4*np.ones(g.num_cells), kyy=np.ones(g.num_cells), kxy=np.ones(g.num_cells))
+    perm = pp.SecondOrderTensor(
+        kxx=4*np.ones(g.num_cells), kyy=np.ones(g.num_cells), kxy=np.ones(g.num_cells))
     b_faces = g.tags["domain_boundary_faces"].nonzero()[0]
     bc = pp.BoundaryCondition(g, b_faces, ["dir"]*b_faces.size)
     bc_val = np.zeros(g.num_faces)
     f = g.cell_volumes
 
-    parameters = {"second_order_tensor": perm, "bc": bc, "bc_values": bc_val, "source": f}
+    parameters = {"second_order_tensor": perm,
+                  "bc": bc, "bc_values": bc_val, "source": f}
     data_key = "flow"
     data = pp.initialize_default_data(g, {}, data_key, parameters)
 
-    discr = pp.RT0(data_key)
-    # discr = pp.MVEM(data_key)
-
-    # step 1
-    print("step 1")
-    start_time = time.time()
-
-    # Create a TPFA method
-    h_perp = np.zeros(g.num_faces)
-    for (face, cell) in zip(*g.cell_faces.nonzero()):
-        h_perp[face] += np.linalg.norm(g.face_centers[:,face] - g.cell_centers[:, cell])
-    L_inv = sps.dia_matrix((g.face_areas / h_perp, 0), (g.num_faces, g.num_faces))
-    
-    # Set up and solve first problem
-    BBt = div*L_inv*div.T
-
-    p_f = sps.linalg.spsolve(BBt, f)
-    q_f = L_inv*div.T*p_f
-
-    print("done in", time.time() - start_time)
-
-    # step 2
-    print("step 2")
-    start_time = time.time()
-    discr.discretize(g, data)
-
-    M = data[pp.DISCRETIZATION_MATRICES][data_key]["mass"]
-    A = curl.T*M*curl
-    b = - curl.T*M*q_f
-
-    # Test if we are in the 2D Dirichlet case.
-    if np.allclose(A * np.ones(A.shape[1]), 0):
-        vals = np.ones((A.shape[1], 1))
-        A = sps.bmat([[A, vals], [vals.T, 1]], format=A.getformat())
-        b = np.append(b, 0.)
-        sigma = sps.linalg.spsolve(A, b)[:-1]
-    else:
-        A += grad*grad.T
-        # sigma = sps.linalg.spsolve(A, b)
-        amg = pyamg.ruge_stuben_solver(A.tocsr())
-        sigma = amg.solve(b, tol=1e-14)
-
-    print("done in", time.time() - start_time)
-
-    # step 3
-    print("step 3")
-    start_time = time.time()
-    q = q_f + curl*sigma
-    p = sps.linalg.spsolve(BBt, div*L_inv*M*q)
-    print("done in", time.time() - start_time)
-
-    # verification
-    q_ref, p_ref = reference_solution(data_key, g, data, discr)
-
-    print("Pressure error: {:.2E}".format(np.linalg.norm(p-p_ref)))
-    print("Flux error:     {:.2E}".format(np.linalg.norm(q-q_ref)))
-    print("Mass loss:      {:.2E}".format(np.linalg.norm(div*q - f)))
+    return data, data_key
 
 
 if __name__ == "__main__":

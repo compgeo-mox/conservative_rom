@@ -4,6 +4,9 @@ import scipy.sparse as sps
 import porepy as pp
 import pygeon as pg
 
+"""
+    Case 3 is a mixed-dimensional case in 3D.
+"""
 
 def main():
 
