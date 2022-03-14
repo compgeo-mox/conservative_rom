@@ -3,17 +3,17 @@ import porepy as pp
 
 def gb():
 
-    p = np.array([[0., 1.], 
-                  [0., 0.]])
+    p = np.array([[0.0, 0.9], 
+                  [0.5, 0.5]])
     e = np.array([[0], [1]])
 
-    domain = {"xmin": 0, "xmax": 1, "ymin": -1, "ymax": 1}
+    domain = {"xmin": 0, "xmax": 1, "ymin": 0, "ymax": 1}
     network = pp.FractureNetwork2d(p, e, domain)
 
     # set the mesh size
     mesh_size = 1
     mesh_kwargs = {"mesh_size_frac": mesh_size,
-                   "mesh_size_min": mesh_size}
+                   "mesh_size_min": mesh_size / 20}
 
     # create the grid bucket
     return network.mesh(mesh_kwargs)

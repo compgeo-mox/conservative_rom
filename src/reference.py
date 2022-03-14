@@ -69,5 +69,5 @@ def dim_check(q, p, q_ref, p_ref, hs):
 
     # import pdb; pdb.set_trace()
     print("Pressure error: {:.2E}".format(np.linalg.norm(p-p_ref)))
-    print("Flux error:     {:.2E}".format(np.linalg.norm(q-q_ref)))
+    print("Flux error:     {:.2E}".format(np.sqrt(np.dot(q-q_ref, hs.mass * (q-q_ref)))))
     print("Mass loss:      {:.2E}".format(np.linalg.norm(hs.div*q - f)))
