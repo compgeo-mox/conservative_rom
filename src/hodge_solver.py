@@ -66,7 +66,6 @@ class HodgeSolver():
         p = self.BBt.solve(self.div*self.mass*q)
         return q, p
 
-
     def assemble_source(self):
 
         f = []
