@@ -33,7 +33,8 @@ def reference_solution(data_key, g, data, discr):
     return q, p
 
 def main(N=2):
-    data_key = 'flow'
+    
+    # Set up grid bucket consisting of one grid
     # 2D
     g = pp.StructuredTriangleGrid([N]*2, [1]*2)
     # g = pp.CartGrid([N]*2, [1]*2)
@@ -42,13 +43,13 @@ def main(N=2):
     # g = pp.StructuredTetrahedralGrid([N]*3, [1]*3)
     # g = pp.CartGrid([N]*3, [1]*3)
 
-    # Set up grid bucket consisting of one grid
     g.compute_geometry()
     gb = pp.meshing.grid_list_to_grid_bucket([[g]])
     setup_data(gb)
 
     pg.compute_edges(gb)
 
+    data_key = 'flow'
     discr = pp.RT0(data_key)
     # discr = pp.MVEM(data_key)
 
