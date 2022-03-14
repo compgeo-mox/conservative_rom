@@ -67,7 +67,7 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 def dim_check(q, p, q_ref, p_ref, hs):
     f = hs.assemble_source()
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     print("Pressure error: {:.2E}".format(np.linalg.norm(p-p_ref)))
     print("Flux error:     {:.2E}".format(np.linalg.norm(q-q_ref)))
     print("Mass loss:      {:.2E}".format(np.linalg.norm(hs.div*q - f)))
