@@ -3,9 +3,9 @@ import porepy as pp
 
 def gb():
 
-    p = np.array([[0.0, 0.9], 
-                  [0.5, 0.5]])
-    e = np.array([[0], [1]])
+    p = np.array([[0.0, 0.9, 0.7, 0.7], 
+                  [0.5, 0.5, 0.1, 0.5]])
+    e = np.array([[0, 2], [1, 3]])
 
     domain = {"xmin": 0, "xmax": 1, "ymin": 0, "ymax": 1}
     network = pp.FractureNetwork2d(p, e, domain)
