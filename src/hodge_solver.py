@@ -57,6 +57,7 @@ class HodgeSolver():
             return sps.linalg.spsolve(A, b)[:-1]
         else:
             A += self.grad*self.grad.T
+            A += sps.identity(A.shape[0]) - pg.numerics.differentials.zero_tip_edge_dofs(self.gb)
             return linalg_solve(A, b)
 
     def step3(self, q_f, sigma):
