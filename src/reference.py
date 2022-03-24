@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
 import porepy as pp
+import pygeon as pg
 
 def equi_dim(data_key, g, data, discr):
     A, b_flow = discr.assemble_matrix_rhs(g, data)
@@ -15,6 +16,22 @@ def equi_dim(data_key, g, data, discr):
     # Extract the flux and pressure from the solution
     q = discr.extract_flux(g, qp, data)
     p = discr.extract_pressure(g, qp, data)
+
+    return q, p
+
+def full_saddlepoint_system(hs):
+    n_p, n_q = hs.div.shape
+    R = pg.numerics.differentials.zero_tip_dofs(hs.gb, 1).tocsr()
+    R = R[R.indices, :]
+    R = sps.block_diag((R, sps.identity(n_p)))
+
+    A = sps.bmat([[hs.mass, - hs.div.T],
+                  [hs.div, None]], format='csr')
+    b = np.concatenate((np.zeros(n_q), hs.assemble_source()))
+
+    sol = R.T * sps.linalg.spsolve(R * A * R.T, R * b)
+    q = sol[:n_q]
+    p = sol[n_q:]
 
     return q, p
 

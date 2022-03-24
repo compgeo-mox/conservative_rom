@@ -13,7 +13,7 @@ def gb():
               1, 'ymax': 1, 'zmin': -1, 'zmax': 1}
 
     # Define a 3d FractureNetwork, similar to the 2d one
-    network = pp.FractureNetwork3d([f_1], domain=domain)
+    network = pp.FractureNetwork3d([f_1, f_2, f_3], domain=domain)
     mesh_args = {'mesh_size_frac': 0.3, 'mesh_size_min': 0.2}
 
     return network.mesh(mesh_args)

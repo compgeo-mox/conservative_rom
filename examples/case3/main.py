@@ -27,7 +27,8 @@ def main():
     hs = HodgeSolver(gb, discr)
     q, p = hs.solve()
 
-    q_ref, p_ref = reference.mixed_dim(data_key, gb, discr)
+    # q_ref, p_ref = reference.mixed_dim(data_key, gb, discr)
+    q_ref, p_ref = reference.full_saddlepoint_system(hs)
     reference.dim_check(q, p, q_ref, p_ref, hs)
 
 

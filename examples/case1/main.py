@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.sparse as sps
 import pyamg
 
 import porepy as pp
@@ -7,7 +6,7 @@ import pygeon as pg
 
 import sys
 sys.path.insert(0, "../../src/")
-# sys.path.insert(0, "src/")
+sys.path.insert(0, "src/")
 from hodge_solver import HodgeSolver
 import reference
 
@@ -36,8 +35,9 @@ def main(N=2):
     q, p = hs.solve()
 
     # verification
-    data = gb.node_props(g)
-    q_ref, p_ref = reference.equi_dim(data_key, g, data, discr)
+    # data = gb.node_props(g)
+    # q_ref, p_ref = reference.equi_dim(data_key, g, data, discr)
+    q_ref, p_ref = reference.full_saddlepoint_system(hs)
 
     reference.dim_check(q, p, q_ref, p_ref, hs)
 
