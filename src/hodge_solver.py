@@ -25,9 +25,6 @@ class HodgeSolver():
         #BBt = self.div*self.h_scaling*self.div.T
         self.BBt = sps.linalg.splu((self.div*self.div.T).tocsc())
 
-        #gb: g2 g1 mg
-        #extract the mass matrices and put them on the (block) diagonal
-
         #h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
 
     def solve(self, linalg_solve = sps.linalg.spsolve):
@@ -48,12 +45,12 @@ class HodgeSolver():
         A += self.grad*self.grad.T
         b = - self.curl.T*self.mass*q_f
 
-        if np.allclose(A * np.ones(A.shape[1]), 0):
-            R = sps.eye(A.shape[1] - 1, A.shape[1])        
-        else:
+        if np.allclose(A * np.ones(A.shape[1]), 0): #Check if we're in fixed-dim with n = 2
+            #Create restriction that removes last dof
+            R = sps.eye(A.shape[1] - 1, A.shape[1])
+        else: # All other cases
             #Create restriction that removes tip dofs
-            R = pg.numerics.differentials.zero_tip_dofs(self.gb, 2).tocsr()
-            R = R[R.indices, :]
+            R = pg.numerics.differentials.remove_tip_dofs(self.gb, 2)
 
         sol = linalg_solve(R*A*R.T, R*b)
 

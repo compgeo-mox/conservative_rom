@@ -21,8 +21,8 @@ def equi_dim(data_key, g, data, discr):
 
 def full_saddlepoint_system(hs):
     n_p, n_q = hs.div.shape
-    R = pg.numerics.differentials.zero_tip_dofs(hs.gb, 1).tocsr()
-    R = R[R.indices, :]
+    
+    R = pg.numerics.differentials.remove_tip_dofs(hs.gb, 1)
     R = sps.block_diag((R, sps.identity(n_p)))
 
     A = sps.bmat([[hs.mass, - hs.div.T],
@@ -30,10 +30,8 @@ def full_saddlepoint_system(hs):
     b = np.concatenate((np.zeros(n_q), hs.assemble_source()))
 
     sol = R.T * sps.linalg.spsolve(R * A * R.T, R * b)
-    q = sol[:n_q]
-    p = sol[n_q:]
 
-    return q, p
+    return sol[:n_q], sol[n_q:]
 
 def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
