@@ -20,7 +20,7 @@ import setup
 
 def main(N=2):
     gb, g = setup.gb(N)
-    pg.compute_edges(gb)
+    pg.compute_geometry(gb)
 
     data_key = setup.data(gb)
 

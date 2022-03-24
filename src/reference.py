@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.sparse as sps
 import porepy as pp
-from pygeon import signed_mortar_to_primary
 
 def equi_dim(data_key, g, data, discr):
     A, b_flow = discr.assemble_matrix_rhs(g, data)
@@ -59,8 +58,9 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
         for e, d_e in gb.edges_of_node(g):
             if e[0] == g:
-                smtp = signed_mortar_to_primary(gb, e)
-                d[pp.STATE][q_name + "_ref"] += smtp * d_e[pp.STATE][mortar_name]
+                mg = d_e['mortar_grid']
+                d[pp.STATE][q_name + "_ref"] += mg.signed_mortar_to_primary * \
+                    d_e[pp.STATE][mortar_name]
 
         q_ref.append(d[pp.STATE][q_name + "_ref"])
         p_ref.append(d[pp.STATE][p_name + "_ref"])

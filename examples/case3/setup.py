@@ -9,8 +9,8 @@ def gb():
     f_3 = pp.Fracture(0.9*np.array([[1, 0, -1, 0], [0, 1, 0, -1], [0, 0, 0, 0]]))
 
     # Also define the domain
-    domain = {'xmin': -2, 'xmax': 2, 'ymin': -
-              2, 'ymax': 2, 'zmin': -2, 'zmax': 2}
+    domain = {'xmin': -1, 'xmax': 1, 'ymin': -
+              1, 'ymax': 1, 'zmin': -1, 'zmax': 1}
 
     # Define a 3d FractureNetwork, similar to the 2d one
     network = pp.FractureNetwork3d([f_1], domain=domain)
@@ -21,7 +21,7 @@ def gb():
 def data(gb, data_key = "flow"):
 
     # Thickness of fracture
-    aperture = 1e-3
+    aperture = 1
     fracture_perm = 1
 
     for g, d in gb:

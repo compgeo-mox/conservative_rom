@@ -3,8 +3,8 @@ import porepy as pp
 
 def gb():
 
-    p = np.array([[0.0, 0.9, 0.7, 0.7], 
-                  [0.5, 0.5, 0.1, 0.5]])
+    p = np.array([[0.0, 1.0, 0.0, 1.0], 
+                  [0.5, 0.5, 0.0, 1.0]])
     e = np.array([[0, 2], [1, 3]])
 
     domain = {"xmin": 0, "xmax": 1, "ymin": 0, "ymax": 1}
@@ -13,7 +13,7 @@ def gb():
     # set the mesh size
     mesh_size = 1
     mesh_kwargs = {"mesh_size_frac": mesh_size,
-                   "mesh_size_min": mesh_size / 20}
+                   "mesh_size_min": mesh_size}
 
     # create the grid bucket
     return network.mesh(mesh_kwargs)
@@ -21,8 +21,8 @@ def gb():
 def data(gb, data_key = "flow"):
 
     # Thickness of fracture
-    aperture = 1e-3
-    fracture_perm = 1e-5
+    aperture = 1
+    fracture_perm = 1
 
     for g, d in gb:
         # The concept of specific volumes accounts for the thickness

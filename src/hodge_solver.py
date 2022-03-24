@@ -36,10 +36,7 @@ class HodgeSolver():
         return self.step3(q_f, sigma)
 
     def step1(self):
-        if isinstance(self.gb, pp.Grid):
-            f = self.data[pp.PARAMETERS][self.data_key]["source"]
-        elif isinstance(self.gb, pp.GridBucket):
-            f = self.assemble_source()
+        f = self.assemble_source()
 
         p_f = self.BBt.solve(f)
         #q_f = h_scaling*self.div.T*p_f
@@ -48,17 +45,19 @@ class HodgeSolver():
 
     def step2(self, q_f, linalg_solve = sps.linalg.spsolve):
         A = self.curl.T*self.mass*self.curl
+        A += self.grad*self.grad.T
         b = - self.curl.T*self.mass*q_f
 
         if np.allclose(A * np.ones(A.shape[1]), 0):
-            vals = np.ones((A.shape[1], 1))
-            A = sps.bmat([[A, vals], [vals.T, 1]], format=A.getformat())
-            b = np.append(b, [0.])
-            return sps.linalg.spsolve(A, b)[:-1]
+            R = sps.eye(A.shape[1] - 1, A.shape[1])        
         else:
-            A += self.grad*self.grad.T
-            A += sps.identity(A.shape[0]) - pg.numerics.differentials.zero_tip_edge_dofs(self.gb)
-            return linalg_solve(A, b)
+            #Create restriction that removes tip dofs
+            R = pg.numerics.differentials.zero_tip_dofs(self.gb, 2).tocsr()
+            R = R[R.indices, :]
+
+        sol = linalg_solve(R*A*R.T, R*b)
+
+        return R.T * sol
 
     def step3(self, q_f, sigma):
         q = q_f + self.curl*sigma
@@ -68,9 +67,12 @@ class HodgeSolver():
         return q, p
 
     def assemble_source(self):
+        if isinstance(self.gb, pp.Grid):
+            return self.data[pp.PARAMETERS][self.data_key]["source"]
 
-        f = []
-        for _, d in self.gb:
-            f.append(d[pp.PARAMETERS]["flow"]["source"])
+        else: # gb is a GridBucket
+            f = []
+            for _, d in self.gb:
+                f.append(d[pp.PARAMETERS]["flow"]["source"])
 
-        return np.concatenate(f)
+            return np.concatenate(f)
