@@ -22,12 +22,19 @@ def equi_dim(data_key, g, data, discr):
 def full_saddlepoint_system(hs):
     n_p, n_q = hs.div.shape
     
-    R = pg.numerics.differentials.remove_tip_dofs(hs.gb, 1)
+    R = pg.remove_tip_dofs(hs.gb, 1)
     R = sps.block_diag((R, sps.identity(n_p)))
+
+    # M0 = pg.numerics.innerproducts.P0_mass(hs.gb, None)
+    # M0 = sps.linalg.inv(M0)
 
     A = sps.bmat([[hs.mass, - hs.div.T],
                   [hs.div, None]], format='csr')
-    b = np.concatenate((np.zeros(n_q), hs.assemble_source()))
+    # e0 = sps.linalg.eigs(A, 1, which="LM")[0]
+    # e1 = sps.linalg.eigs(A, 1, sigma = 1e-8)[0]
+
+    # print(np.abs(e0)/np.abs(e1))
+    b = np.concatenate((hs.assemble_rhs(), hs.assemble_source()))
 
     sol = R.T * sps.linalg.spsolve(R * A * R.T, R * b)
 

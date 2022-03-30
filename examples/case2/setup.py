@@ -36,7 +36,7 @@ def data(gb, data_key = "flow"):
         perm = pp.SecondOrderTensor(k)
 
         # Unitary scalar source already integrated in each cell
-        f = 1 * g.cell_volumes * specific_volumes
+        f = g.cell_volumes * specific_volumes
 
         # Boundary conditions
         b_faces = g.tags['domain_boundary_faces'].nonzero()[0]
@@ -54,5 +54,3 @@ def data(gb, data_key = "flow"):
         # dividing by the distance from the matrix to the center of the fracture.
         kn = fracture_perm / (aperture/2)
         pp.initialize_data(mg, d, data_key, {"normal_diffusivity": kn})
-
-    return data_key

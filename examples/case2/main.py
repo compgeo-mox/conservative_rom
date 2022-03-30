@@ -19,9 +19,9 @@ def main():
     gb = setup.gb()
     pg.compute_geometry(gb)
 
-    data_key = setup.data(gb)
+    setup.data(gb)
 
-    discr = pp.RT0(data_key) # MVEM
+    discr = pp.RT0("flow") # MVEM
 
     hs = HodgeSolver(gb, discr)
     q, p = hs.solve()

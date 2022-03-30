@@ -6,10 +6,9 @@ import pygeon as pg
 
 class HodgeSolver():
 
-    def __init__(self, gb, discr, data=None, data_key="flow", if_check=True):
+    def __init__(self, gb, discr, data=None, if_check=True):
         self.gb = gb
         self.data = data
-        self.data_key = data_key
 
         self.grad = pg.grad(gb)
         self.curl = pg.curl(gb)
@@ -43,14 +42,15 @@ class HodgeSolver():
     def step2(self, q_f, linalg_solve = sps.linalg.spsolve):
         A = self.curl.T*self.mass*self.curl
         A += self.grad*self.grad.T
-        b = - self.curl.T*self.mass*q_f
+        b = self.curl.T*(self.assemble_rhs() - self.mass*q_f)
 
-        if np.allclose(A * np.ones(A.shape[1]), 0): #Check if we're in fixed-dim with n = 2
+        #Check if we're in the Dirichlet case with n = 2
+        if np.allclose(A * np.ones(A.shape[1]), 0):
             #Create restriction that removes last dof
             R = sps.eye(A.shape[1] - 1, A.shape[1])
         else: # All other cases
             #Create restriction that removes tip dofs
-            R = pg.numerics.differentials.remove_tip_dofs(self.gb, 2)
+            R = pg.remove_tip_dofs(self.gb, 2)
 
         sol = linalg_solve(R*A*R.T, R*b)
 
@@ -60,12 +60,12 @@ class HodgeSolver():
         q = q_f + self.curl*sigma
 
         #p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
-        p = self.BBt.solve(self.div*self.mass*q)
+        p = self.BBt.solve(self.div*(self.mass*q - self.assemble_rhs()))
         return q, p
 
     def assemble_source(self):
         if isinstance(self.gb, pp.Grid):
-            return self.data[pp.PARAMETERS][self.data_key]["source"]
+            return self.data[pp.PARAMETERS]["flow"]["source"]
 
         else: # gb is a GridBucket
             f = []
@@ -73,3 +73,20 @@ class HodgeSolver():
                 f.append(d[pp.PARAMETERS]["flow"]["source"])
 
             return np.concatenate(f)
+
+    def assemble_rhs(self):
+        if isinstance(self.gb, pp.Grid):
+            raise NotImplementedError
+
+        else:  # gb is a GridBucket
+            rhs = []
+            for g, d in self.gb:
+                bc_values = d[pp.PARAMETERS]["flow"]["bc_values"].copy()                
+                b_faces = np.where(g.tags["domain_boundary_faces"])[0]
+                signs = [g.cell_faces.tocsr()[face, :].data[0] for face in b_faces]
+                
+                bc_values[b_faces] *= -np.array(signs)
+
+                rhs.append(bc_values)
+            
+            return np.concatenate(rhs)

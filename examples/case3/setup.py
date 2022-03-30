@@ -42,7 +42,7 @@ def data(gb, data_key = "flow"):
         b_faces = g.tags['domain_boundary_faces'].nonzero()[0]
         bc = pp.BoundaryCondition(g, b_faces, ['dir']*b_faces.size)
         bc_val = np.zeros(g.num_faces)
-        # bc_val[b_faces] = g.face_centers[1, b_faces]
+        bc_val[b_faces] = np.sin( 2 * np.pi * g.face_centers[1, b_faces])
 
         parameters = {"second_order_tensor": perm,
                       "source": f, "bc": bc, "bc_values": bc_val}
@@ -54,5 +54,3 @@ def data(gb, data_key = "flow"):
         # dividing by the distance from the matrix to the center of the fracture.
         kn = fracture_perm / (aperture/2)
         pp.initialize_data(mg, d, data_key, {"normal_diffusivity": kn})
-
-    return data_key

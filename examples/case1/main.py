@@ -18,12 +18,12 @@ import setup
 """
 
 def main(N=2):
-    gb, g = setup.gb(N)
+    gb = setup.gb(N)
     pg.compute_geometry(gb)
 
-    data_key = setup.data(gb)
+    setup.data(gb)
 
-    discr = pp.RT0(data_key) # MVEM
+    discr = pp.RT0("flow") # MVEM
 
     hs = HodgeSolver(gb, discr)
 
@@ -39,8 +39,8 @@ def main(N=2):
     # q_ref, p_ref = reference.equi_dim(data_key, g, data, discr)
     q_ref, p_ref = reference.full_saddlepoint_system(hs)
 
-    reference.dim_check(q, p, q_ref, p_ref, hs)
+    # reference.dim_check(q, p, q_ref, p_ref, hs)
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=9999)
-    [main(N) for N in [6]]
+    [main(N) for N in [4, 8, 16, 32]]
