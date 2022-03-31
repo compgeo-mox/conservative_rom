@@ -3,6 +3,7 @@ import scipy.sparse as sps
 import porepy as pp
 import pygeon as pg
 
+
 def equi_dim(data_key, g, data, discr):
     A, b_flow = discr.assemble_matrix_rhs(g, data)
 
@@ -11,7 +12,7 @@ def equi_dim(data_key, g, data, discr):
     rhs_discr.discretize(g, data)
     _, b_rhs = rhs_discr.assemble_matrix_rhs(g, data)
 
-    qp = sps.linalg.spsolve(A, b_flow+b_rhs)
+    qp = sps.linalg.spsolve(A, b_flow + b_rhs)
 
     # Extract the flux and pressure from the solution
     q = discr.extract_flux(g, qp, data)
@@ -19,16 +20,17 @@ def equi_dim(data_key, g, data, discr):
 
     return q, p
 
-def full_saddlepoint_system(hs):
+
+def full_saddlepoint_system(hs, scaling=1.):
     n_p, n_q = hs.div.shape
-    
+
     R = pg.remove_tip_dofs(hs.gb, 1)
     R = sps.block_diag((R, sps.identity(n_p)))
 
     # M0 = pg.numerics.innerproducts.P0_mass(hs.gb, None)
     # M0 = sps.linalg.inv(M0)
 
-    A = sps.bmat([[hs.mass, - hs.div.T],
+    A = sps.bmat([[scaling * hs.mass, - hs.div.T],
                   [hs.div, None]], format='csr')
     # e0 = sps.linalg.eigs(A, 1, which="LM")[0]
     # e1 = sps.linalg.eigs(A, 1, sigma = 1e-8)[0]
@@ -40,6 +42,7 @@ def full_saddlepoint_system(hs):
 
     return sol[:n_q], sol[n_q:]
 
+
 def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
     rhs_discr = pp.DualScalarSource(data_key)
@@ -49,7 +52,8 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
     mortar_name = "mortar_flux"
     for g, d in gb:
         d[pp.PRIMARY_VARIABLES] = {var_name: {"cells": 1, "faces": 1}}
-        d[pp.DISCRETIZATION] = {var_name: {"diffusive": discr, "source": rhs_discr}}
+        d[pp.DISCRETIZATION] = {var_name: {
+            "diffusive": discr, "source": rhs_discr}}
 
     for e, d in gb.edges():
         g1, g2 = gb.nodes_of_edge(e)
@@ -92,10 +96,12 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
     return np.concatenate(q_ref), np.concatenate(p_ref)
 
+
 def dim_check(q, p, q_ref, p_ref, hs):
     f = hs.assemble_source()
 
     # import pdb; pdb.set_trace()
     print("Pressure error: {:.2E}".format(np.linalg.norm(p-p_ref)))
-    print("Flux error:     {:.2E}".format(np.sqrt(np.dot(q-q_ref, hs.mass * (q-q_ref)))))
+    print("Flux error:     {:.2E}".format(
+        np.sqrt(np.dot(q-q_ref, hs.mass * (q-q_ref)))))
     print("Mass loss:      {:.2E}".format(np.linalg.norm(hs.div*q - f)))

@@ -5,6 +5,7 @@ import porepy as pp
 import pygeon as pg
 
 import sys
+
 sys.path.insert(0, "../../src/")
 sys.path.insert(0, "src/")
 from hodge_solver import HodgeSolver
@@ -17,13 +18,14 @@ import setup
     MFEM and MVEM in 2D or 3D.
 """
 
+
 def main(N=2):
     gb = setup.gb(N)
     pg.compute_geometry(gb)
 
     setup.data(gb)
 
-    discr = pp.RT0("flow") # MVEM
+    discr = pp.RT0("flow")  # MVEM
 
     hs = HodgeSolver(gb, discr)
 
@@ -39,8 +41,9 @@ def main(N=2):
     # q_ref, p_ref = reference.equi_dim(data_key, g, data, discr)
     q_ref, p_ref = reference.full_saddlepoint_system(hs)
 
-    # reference.dim_check(q, p, q_ref, p_ref, hs)
+    reference.dim_check(q, p, q_ref, p_ref, hs)
+
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=9999)
-    [main(N) for N in [4, 8, 16, 32]]
+    [main(N) for N in [6]]
