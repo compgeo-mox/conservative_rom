@@ -5,8 +5,7 @@ import porepy as pp
 import pygeon as pg
 
 
-class HodgeSolver():
-
+class HodgeSolver:
     def __init__(self, gb, discr, data=None, if_check=True):
         self.gb = gb
         self.data = data
@@ -22,11 +21,14 @@ class HodgeSolver():
 
         self.mass = pg.hdiv_mass(gb, discr, data)
 
-        #BBt = self.div*self.h_scaling*self.div.T
-        BBt = self.div*self.div.T
+        self.f = self.assemble_source()
+        self.g = self.assemble_rhs()
+
+        # BBt = self.div*self.h_scaling*self.div.T
+        BBt = self.div * self.div.T
         self.BBt = sps.linalg.splu(BBt.tocsc())
 
-        #h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
+        # h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
 
     def solve(self, linalg_solve=sps.linalg.spsolve):
         q_f = self.step1()
@@ -34,17 +36,15 @@ class HodgeSolver():
         return self.step3(q_f, sigma)
 
     def step1(self):
-        f = self.assemble_source()
-
-        p_f = self.BBt.solve(f)
-        #q_f = h_scaling*self.div.T*p_f
-        q_f = self.div.T*p_f
+        p_f = self.BBt.solve(self.f)
+        # q_f = h_scaling*self.div.T*p_f
+        q_f = self.div.T * p_f
         return q_f
 
     def step2(self, q_f, linalg_solve=sps.linalg.spsolve):
-        A = self.curl.T*self.mass*self.curl
-        A += self.grad*self.grad.T
-        b = self.curl.T*(self.assemble_rhs() - self.mass*q_f)
+        A = self.curl.T * self.mass * self.curl
+        A += self.grad * self.grad.T
+        b = self.curl.T * (self.g - self.mass * q_f)
 
         # Check if we're in the Dirichlet case with n = 2
         if np.allclose(A * np.ones(A.shape[1]), 0):
@@ -54,42 +54,33 @@ class HodgeSolver():
             # Create restriction that removes tip dofs
             R = pg.remove_tip_dofs(self.gb, 2)
 
-        sol = linalg_solve(R*A*R.T, R*b)
+        sol = linalg_solve(R * A * R.T, R * b)
 
         return R.T * sol
 
     def step3(self, q_f, sigma):
-        q = q_f + self.curl*sigma
+        q = q_f + self.curl * sigma
 
-        #p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
-        p = self.BBt.solve(self.div*(self.mass*q - self.assemble_rhs()))
+        # p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
+        p = self.BBt.solve(self.div * (self.mass * q - self.g))
         return q, p
 
     def assemble_source(self):
-        if isinstance(self.gb, pp.Grid):
-            return self.data[pp.PARAMETERS]["flow"]["source"]
+        f = []
+        for _, d in self.gb:
+            f.append(d[pp.PARAMETERS]["flow"]["source"])
 
-        else:  # gb is a GridBucket
-            f = []
-            for _, d in self.gb:
-                f.append(d[pp.PARAMETERS]["flow"]["source"])
-
-            return np.concatenate(f)
+        return np.concatenate(f)
 
     def assemble_rhs(self):
-        if isinstance(self.gb, pp.Grid):
-            raise NotImplementedError
+        rhs = []
+        for g, d in self.gb:
+            bc_values = d[pp.PARAMETERS]["flow"]["bc_values"].copy()
+            b_faces = np.where(g.tags["domain_boundary_faces"])[0]
+            signs = [g.cell_faces.tocsr()[face, :].data[0] for face in b_faces]
 
-        else:  # gb is a GridBucket
-            rhs = []
-            for g, d in self.gb:
-                bc_values = d[pp.PARAMETERS]["flow"]["bc_values"].copy()
-                b_faces = np.where(g.tags["domain_boundary_faces"])[0]
-                signs = [g.cell_faces.tocsr()[face, :].data[0]
-                         for face in b_faces]
+            bc_values[b_faces] *= -np.array(signs)
 
-                bc_values[b_faces] *= -np.array(signs)
+            rhs.append(bc_values)
 
-                rhs.append(bc_values)
-
-            return np.concatenate(rhs)
+        return np.concatenate(rhs)
