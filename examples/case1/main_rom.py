@@ -32,16 +32,16 @@ def main(N=2):
     h_off = Hodge_offline(hs)
     h_on = Hodge_online(h_off, hs)
 
-    mu = np.array([1.0, -10.0, 1.0])
+    print(h_off.U.shape)
+
+    mu = np.array([1.0, 1.0, 1.0])
     q, p = h_on.solve(mu)
 
     q_ref, p_ref = reference.full_saddlepoint_system(hs)
 
     reference.dim_check(q, p, q_ref, p_ref, hs)
 
-    print("all done")
-
 
 if __name__ == "__main__":
     np.set_printoptions(linewidth=9999)
-    [main(N) for N in [6]]
+    [main(N) for N in [5]]

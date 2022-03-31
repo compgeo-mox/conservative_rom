@@ -23,21 +23,15 @@ class Hodge_offline(pg.OfflineComputations):
 
     def generate_snapshots(self):
         snapshots = [self.solve_one_instance(mu) for mu in self.mu_params]
-
         return np.column_stack(snapshots)
 
     def solve_one_instance(self, mu):
-        hs = self.hs
-        hs.mass /= mu[0]
-        hs.f *= mu[1]
-        hs.g *= mu[2]
+        scale_matrices(self.hs, mu)
 
-        q_f = hs.step1()
-        sigma = hs.step2(q_f)
+        q_f = self.hs.step1()
+        sigma = self.hs.step2(q_f)
 
-        hs.mass *= mu[0]
-        hs.f /= mu[1]
-        hs.g /= mu[2]
+        undo_scale_matrices(self.hs, mu)
 
         return sigma
 
@@ -78,9 +72,9 @@ class Hodge_online(HodgeSolver):
         return self.scale_matrices(1.0 / mu)
 
     def solve(self, mu, linalg_solve=...):
-        self.scale_matrices(mu)
+        scale_matrices(self, mu)
         q, p = super().solve(linalg_solve)
-        self.undo_scale_matrices(mu)
+        undo_scale_matrices(self, mu)
 
         return q, p
 
@@ -94,3 +88,13 @@ class Hodge_online(HodgeSolver):
         sol = sps.linalg.spsolve(R * A * R.T, R * b)
 
         return R.T * sol
+
+
+def scale_matrices(hs, mu):
+    hs.mass /= mu[0]
+    hs.f *= mu[1]
+    hs.g *= mu[2]
+
+
+def undo_scale_matrices(hs, mu):
+    return scale_matrices(hs, 1.0 / mu)
