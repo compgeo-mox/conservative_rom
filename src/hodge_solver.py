@@ -6,7 +6,7 @@ import pygeon as pg
 
 
 class HodgeSolver:
-    def __init__(self, gb, discr, data=None, if_check=True):
+    def __init__(self, gb, discr, data=None, perform_check=True):
         self.gb = gb
         self.data = data
 
@@ -15,7 +15,7 @@ class HodgeSolver:
         self.div = pg.div(gb)
 
         # Testing
-        if if_check:
+        if perform_check:
             assert (self.curl * self.grad).nnz == 0
             assert (self.div * self.curl).nnz == 0
 
@@ -84,3 +84,22 @@ class HodgeSolver:
             rhs.append(bc_values)
 
         return np.concatenate(rhs)
+
+    def copy(self):
+        copy_self = HodgeSolver.__new__(HodgeSolver)
+
+        copy_self.gb = self.gb
+        copy_self.data = self.data
+
+        copy_self.grad = self.grad
+        copy_self.curl = self.curl
+        copy_self.div = self.div
+
+        copy_self.mass = self.mass
+
+        copy_self.f = self.f
+        copy_self.g = self.g
+
+        copy_self.BBt = self.BBt
+
+        return copy_self

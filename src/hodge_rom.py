@@ -63,14 +63,6 @@ class Hodge_online(HodgeSolver):
 
         self.BBt = hs.BBt
 
-    def scale_matrices(self, mu):
-        self.mass /= mu[0]
-        self.f *= mu[1]
-        self.g *= mu[2]
-
-    def undo_scale_matrices(self, mu):
-        return self.scale_matrices(1.0 / mu)
-
     def solve(self, mu, linalg_solve=...):
         scale_matrices(self, mu)
         q, p = super().solve(linalg_solve)
