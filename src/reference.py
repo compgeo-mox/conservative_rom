@@ -21,7 +21,7 @@ def equi_dim(data_key, g, data, discr):
     return q, p
 
 
-def full_saddlepoint_system(hs, scaling=1.):
+def full_saddlepoint_system(hs):
     n_p, n_q = hs.div.shape
 
     R = pg.remove_tip_dofs(hs.gb, 1)
@@ -30,13 +30,12 @@ def full_saddlepoint_system(hs, scaling=1.):
     # M0 = pg.numerics.innerproducts.P0_mass(hs.gb, None)
     # M0 = sps.linalg.inv(M0)
 
-    A = sps.bmat([[scaling * hs.mass, - hs.div.T],
-                  [hs.div, None]], format='csr')
+    A = sps.bmat([[hs.mass, -hs.div.T], [hs.div, None]], format="csr")
     # e0 = sps.linalg.eigs(A, 1, which="LM")[0]
     # e1 = sps.linalg.eigs(A, 1, sigma = 1e-8)[0]
 
     # print(np.abs(e0)/np.abs(e1))
-    b = np.concatenate((hs.assemble_rhs(), hs.assemble_source()))
+    b = np.concatenate((hs.g, hs.f))
 
     sol = R.T * sps.linalg.spsolve(R * A * R.T, R * b)
 
@@ -52,8 +51,7 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
     mortar_name = "mortar_flux"
     for g, d in gb:
         d[pp.PRIMARY_VARIABLES] = {var_name: {"cells": 1, "faces": 1}}
-        d[pp.DISCRETIZATION] = {var_name: {
-            "diffusive": discr, "source": rhs_discr}}
+        d[pp.DISCRETIZATION] = {var_name: {"diffusive": discr, "source": rhs_discr}}
 
     for e, d in gb.edges():
         g1, g2 = gb.nodes_of_edge(e)
@@ -84,9 +82,10 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
         for e, d_e in gb.edges_of_node(g):
             if e[0] == g:
-                mg = d_e['mortar_grid']
-                d[pp.STATE][q_name + "_ref"] += mg.signed_mortar_to_primary * \
-                    d_e[pp.STATE][mortar_name]
+                mg = d_e["mortar_grid"]
+                d[pp.STATE][q_name + "_ref"] += (
+                    mg.signed_mortar_to_primary * d_e[pp.STATE][mortar_name]
+                )
 
         q_ref.append(d[pp.STATE][q_name + "_ref"])
         p_ref.append(d[pp.STATE][p_name + "_ref"])
@@ -98,10 +97,13 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
 
 def dim_check(q, p, q_ref, p_ref, hs):
-    f = hs.assemble_source()
 
-    # import pdb; pdb.set_trace()
-    print("Pressure error: {:.2E}".format(np.linalg.norm(p-p_ref)))
-    print("Flux error:     {:.2E}".format(
-        np.sqrt(np.dot(q-q_ref, hs.mass * (q-q_ref)))))
-    print("Mass loss:      {:.2E}".format(np.linalg.norm(hs.div*q - f)))
+    e_p = np.linalg.norm(p - p_ref)
+    e_p /= np.linalg.norm(p_ref)
+    e_q = np.sqrt(np.dot(q - q_ref, hs.mass * (q - q_ref)))
+    e_q /= np.sqrt(np.dot(q_ref, hs.mass * q_ref))
+    e_f = np.linalg.norm(hs.div * q - hs.f)
+
+    print("Pressure error: {:.2E}".format(e_p))
+    print("Flux error:     {:.2E}".format(e_q))
+    print("Mass loss:      {:.2E}".format(e_f))

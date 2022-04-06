@@ -8,6 +8,7 @@ import pygeon as pg
 class HodgeSolver:
     def __init__(self, gb, discr, data=None, perform_check=True):
         self.gb = gb
+        self.discr = discr
         self.data = data
 
         self.grad = pg.grad(gb)
@@ -19,8 +20,7 @@ class HodgeSolver:
             assert (self.curl * self.grad).nnz == 0
             assert (self.div * self.curl).nnz == 0
 
-        self.mass = pg.hdiv_mass(gb, discr, data)
-
+        self.mass = self.compute_mass_matrix()
         self.f = self.assemble_source()
         self.g = self.assemble_rhs()
 
@@ -29,6 +29,9 @@ class HodgeSolver:
         self.BBt = sps.linalg.splu(BBt.tocsc())
 
         # h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
+
+    def compute_mass_matrix(self):
+        return pg.hdiv_mass(self.gb, self.discr, self.data)
 
     def solve(self, linalg_solve=sps.linalg.spsolve):
         q_f = self.step1()
@@ -46,13 +49,7 @@ class HodgeSolver:
         A += self.grad * self.grad.T
         b = self.curl.T * (self.g - self.mass * q_f)
 
-        # Check if we're in the Dirichlet case with n = 2
-        if np.allclose(A * np.ones(A.shape[1]), 0):
-            # Create restriction that removes last dof
-            R = sps.eye(A.shape[1] - 1, A.shape[1])
-        else:  # All other cases
-            # Create restriction that removes tip dofs
-            R = pg.remove_tip_dofs(self.gb, 2)
+        R = self.create_restriction()
 
         sol = linalg_solve(R * A * R.T, R * b)
 
@@ -64,6 +61,20 @@ class HodgeSolver:
         # p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
         p = self.BBt.solve(self.div * (self.mass * q - self.g))
         return q, p
+
+    def create_restriction(self):
+        n = self.curl.shape[1]
+
+        # If the constants are in the kernel, then we are in the 2D Dirichlet case
+        if np.allclose(n * np.ones(n), 0):
+            # Create restriction that removes last dof
+            R = sps.eye(n - 1, n)
+
+        else:  # All other cases
+            # Create restriction that removes tip dofs
+            R = pg.remove_tip_dofs(self.gb, 2)
+
+        return R
 
     def assemble_source(self):
         f = []
@@ -88,18 +99,7 @@ class HodgeSolver:
     def copy(self):
         copy_self = HodgeSolver.__new__(HodgeSolver)
 
-        copy_self.gb = self.gb
-        copy_self.data = self.data
-
-        copy_self.grad = self.grad
-        copy_self.curl = self.curl
-        copy_self.div = self.div
-
-        copy_self.mass = self.mass
-
-        copy_self.f = self.f
-        copy_self.g = self.g
-
-        copy_self.BBt = self.BBt
+        for str, attr in self.__dict__.items():
+            copy_self.__setattr__(str, attr)
 
         return copy_self

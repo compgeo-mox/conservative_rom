@@ -4,7 +4,7 @@ import porepy as pp
 
 def gb(N):
     # 2D
-    # g = pp.StructuredTriangleGrid([N]*2, [1]*2)
+    # g = pp.StructuredTriangleGrid([N] * 2, [1] * 2)
     # g = pp.CartGrid([N]*2, [1]*2)
 
     # 3D
@@ -23,7 +23,7 @@ def data(gb):
         b_faces = g.tags["domain_boundary_faces"].nonzero()[0]
         bc = pp.BoundaryCondition(g, b_faces, ["dir"] * b_faces.size)
         bc_val = np.zeros(g.num_faces)
-        bc_val[b_faces] = np.sin(2 * np.pi * g.face_centers[1, b_faces])
+        # bc_val[b_faces] = np.sin(2 * np.pi * g.face_centers[1, b_faces])
 
         f = g.cell_volumes
 
