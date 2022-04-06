@@ -7,20 +7,18 @@ from hodge_solver import HodgeSolver
 
 
 class Hodge_offline:
-    def __init__(self, hs: HodgeSolver, n_snaps=10):
+    def __init__(self, hs: HodgeSolver):
         self.hs = hs
 
-        samples = qmc.LatinHypercube(2).random(n_snaps)
-        l_bounds = np.array([-2, -10])
-        u_bounds = np.array([2, 10])
-
-        self.mu_params = qmc.scale(samples, l_bounds, u_bounds)
-        self.mu_params[:, 0] = 10.0 ** self.mu_params[:, 0]
+        self.mu_params = self.generate_samples()
 
         self.S = self.generate_snapshots()
         self.U, self.Sigma, _ = np.linalg.svd(self.S, full_matrices=False)
 
         self.U = self.truncate_U()
+
+    def generate_samples(self):
+        pass
 
     def generate_snapshots(self):
         snapshots = [self.solve_one_instance(mu) for mu in self.mu_params]
@@ -42,23 +40,7 @@ class Hodge_offline:
         return hs_temp
 
     def adjust_data(self, hs, mu):
-        n = hs.gb.dim_max()
-
-        def perm_field(g):
-            K = np.ones(g.cell_centers.shape[1])
-            K[g.cell_centers[n - 1, :] > 0.5] = mu[0]
-            return pp.SecondOrderTensor(K)
-
-        def source(g):
-            return g.cell_volumes * mu[1]
-
-        for g, d in hs.gb:
-            d["parameters"]["flow"]["second_order_tensor"] = perm_field(g)
-            d["parameters"]["flow"]["source"] = source(g)
-
-        hs.mass = hs.compute_mass_matrix()
-        hs.f = hs.assemble_source()
-        # hs.g = hs.assemble_rhs()
+        pass
 
     def truncate_U(self, threshold=1e-6):
         I = np.cumsum(self.Sigma**2) / np.sum(self.Sigma**2)

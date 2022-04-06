@@ -9,7 +9,7 @@ def gb(N):
 
     # 3D
     g = pp.StructuredTetrahedralGrid([N] * 3, [1] * 3)
-    # g = pp.CartGrid([N]*3, [1]*3)
+    # g = pp.CartGrid([N] * 3, [1] * 3)
 
     # Set up grid bucket consisting of one grid
     g.compute_geometry()
