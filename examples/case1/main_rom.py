@@ -6,6 +6,7 @@ import pygeon as pg
 import sys
 
 sys.path.insert(0, "../../src/")
+sys.path.insert(0, "src/")
 from hodge_solver import HodgeSolver
 from hodge_rom import *
 import reference
@@ -65,7 +66,7 @@ class Hodge_offline_case1(Hodge_offline):
         n = hs.gb.dim_max()
 
         def perm_field(g):
-            K = np.ones(g.cell_centers.shape[1])
+            K = np.ones(g.num_cells)
             K[g.cell_centers[n - 1, :] > 0.5] = mu[0]
             return pp.SecondOrderTensor(K)
 

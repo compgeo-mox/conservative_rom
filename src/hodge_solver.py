@@ -6,10 +6,9 @@ import pygeon as pg
 
 
 class HodgeSolver:
-    def __init__(self, gb, discr, data=None, perform_check=True):
+    def __init__(self, gb, discr, perform_check=True):
         self.gb = gb
         self.discr = discr
-        self.data = data
 
         self.grad = pg.grad(gb)
         self.curl = pg.curl(gb)
@@ -31,7 +30,7 @@ class HodgeSolver:
         # h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
 
     def compute_mass_matrix(self):
-        return pg.hdiv_mass(self.gb, self.discr, self.data)
+        return pg.hdiv_mass(self.gb, self.discr)
 
     def solve(self, linalg_solve=sps.linalg.spsolve):
         q_f = self.step1()
