@@ -8,18 +8,14 @@ class Spe10(object):
 
 # ------------------------------------------------------------------------------#
 
-    def __init__(self, layers):
+    def __init__(self):
         self.full_shape = (60, 220, 85)
         self.full_physdims = (365.76, 670.56, 51.816)
 
-        self.layers = np.sort(np.atleast_1d(layers))
-
         self.N = 0
         self.n = 0
-        self._compute_size()
 
         self.gb = None
-        self._create_gb()
 
         self.perm = None
         self.layers_id = None
@@ -27,14 +23,19 @@ class Spe10(object):
 
 # ------------------------------------------------------------------------------#
 
-    def _compute_size(self):
-        dim = self.layers.size
-        if dim == 1:
+    def create_gb(self, num_layer=1, perm_folder="./spe10_perm/"):
+        self._compute_size(num_layer)
+        self._create_gb()
+
+# ------------------------------------------------------------------------------#
+
+    def _compute_size(self, num_layer):
+        if num_layer == 1:
             self.shape = list(self.full_shape[:2])
             self.physdims = list(self.full_physdims[:2])
         else:
-            self.shape = list(self.full_shape[:2]) + [dim]
-            thickness = self.full_physdims[2] / self.full_shape[2] * dim
+            self.shape = list(self.full_shape[:2]) + [num_layer]
+            thickness = self.full_physdims[2] / self.full_shape[2] * num_layer
             self.physdims = list(self.full_physdims[:2]) + [thickness]
 
         self.N = np.prod(self.shape)
@@ -51,7 +52,8 @@ class Spe10(object):
 
 # ------------------------------------------------------------------------------#
 
-    def read_perm(self, perm_folder):
+    def read_perm(self, layers, perm_folder="./spe10_perm/"):
+        self.layers = np.sort(np.atleast_1d(layers))
 
         shape = (self.n, self.layers.size)
         perm_xx, perm_yy, perm_zz = np.empty(shape), np.empty(shape), np.empty(shape)
@@ -73,6 +75,7 @@ class Spe10(object):
         self.perm = np.stack((perm_xx, perm_yy, perm_zz)).T
 
         self.layers_id = layers_id.reshape(shape, order="F")
+        return self.perm
 
 # ------------------------------------------------------------------------------#
 
