@@ -23,14 +23,26 @@ class HodgeSolver:
         self.f = self.assemble_source()
         self.g = self.assemble_rhs()
 
-        # BBt = self.div*self.h_scaling*self.div.T
-        BBt = self.div * self.div.T
+        self.Ldiv_inv, self.Lcurl, self.Lgrad_inv = self.compute_lumped_matrices()
+
+        BBt = self.div * self.Ldiv_inv * self.div.T
         self.BBt = sps.linalg.splu(BBt.tocsc())
 
         # h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
 
     def compute_mass_matrix(self):
         return pg.hdiv_mass(self.gb, self.discr)
+
+    def compute_lumped_matrices(self):
+        L = [
+            pg.numerics.innerproducts.lumped_mass_matrix(self.gb, self.discr, n_minus_k)
+            for n_minus_k in [1, 2, 3]
+        ]
+
+        L[0].data = 1.0 / L[0].data
+        L[2].data = 1.0 / L[2].data
+
+        return L
 
     def solve(self, linalg_solve=sps.linalg.spsolve):
         q_f = self.step1()
@@ -39,13 +51,12 @@ class HodgeSolver:
 
     def step1(self):
         p_f = self.BBt.solve(self.f)
-        # q_f = h_scaling*self.div.T*p_f
-        q_f = self.div.T * p_f
+        q_f = self.Ldiv_inv * self.div.T * p_f
         return q_f
 
     def step2(self, q_f, linalg_solve=sps.linalg.spsolve):
         A = self.curl.T * self.mass * self.curl
-        A += self.grad * self.grad.T
+        A += (self.Lcurl * self.grad) * self.Lgrad_inv * (self.Lcurl * self.grad).T
         b = self.curl.T * (self.g - self.mass * q_f)
 
         R = self.create_restriction()
@@ -57,8 +68,7 @@ class HodgeSolver:
     def step3(self, q_f, sigma):
         q = q_f + self.curl * sigma
 
-        # p = sps.linalg.spsolve(BBt, h_scaling*div*M*q)
-        p = self.BBt.solve(self.div * (self.mass * q - self.g))
+        p = self.BBt.solve(self.div * self.Ldiv_inv * (self.mass * q - self.g))
         return q, p
 
     def create_restriction(self):

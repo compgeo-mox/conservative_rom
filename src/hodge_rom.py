@@ -42,14 +42,26 @@ class Hodge_offline:
     def adjust_data(self, hs, mu):
         pass
 
-    def truncate_U(self, threshold=1e-6):
+    def truncate_U(self, threshold=1e-10):
         I = np.cumsum(self.Sigma**2) / np.sum(self.Sigma**2)
-        N = np.argmax(I >= 1 - threshold**2)
+        N = np.argmax(1.0 - I <= threshold**2)
 
-        if N + 1 == I.size:
-            raise Warning("You should have more snapshots")
+        if N >= I.size - 2:
+            Warning("You should probably have more snapshots")
 
         return self.U[:, : N + 1]
+
+    def save(self, str):
+        np.savez(str + "saved", S=self.S, Sigma=self.Sigma, U=self.U)
+
+    def plot_singular_values(self):
+        import matplotlib.pyplot as plt
+
+        plt.plot(np.arange(len(self.Sigma)) + 1.0, self.Sigma, marker="o")
+        plt.yscale("log")
+        plt.title("Singular values")
+        plt.show()
+        plt.savefig("results/singular_values.pdf", format="pdf", bbox_inches="tight")
 
 
 class Hodge_online:
