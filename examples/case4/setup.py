@@ -8,22 +8,10 @@ def data(spe10):
         perm = pp.SecondOrderTensor(np.ones(g.num_cells))
 
         b_faces = g.tags["domain_boundary_faces"].nonzero()[0]
-        b_face_centers = g.face_centers[:, b_faces]
-
-        # define outflow type boundary conditions
-        out_flow = b_face_centers[1] > spe10.full_physdims[1] - tol
-
-        # define inflow type boundary conditions
-        in_flow = b_face_centers[1] < 0 + tol
 
         # define the labels and values for the boundary faces
-        labels = np.array(["neu"] * b_faces.size)
-        bc_val = np.zeros(g.num_faces)
-
-        labels[in_flow] = "dir"
-        labels[out_flow] = "dir"
-        bc_val[b_faces[in_flow]] = 0
-        bc_val[b_faces[out_flow]] = 1e7
+        labels = np.array(["dir"] * b_faces.size)
+        bc_val = g.face_centers[1]/spe10.full_physdims[1] * 1e7
 
         bc = pp.BoundaryCondition(g, b_faces, labels)
 
