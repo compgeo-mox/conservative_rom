@@ -12,7 +12,6 @@ from hodge_rom import *
 import reference
 
 import setup
-from spe10 import Spe10
 
 """
     Case 2 is a fixed-dimensional case in 3D using MFEM
@@ -20,18 +19,17 @@ from spe10 import Spe10
 
 def main():
     # create the grid bucket from a specific layer
-    spe10 = Spe10()
+    gb = setup.gb(1)
+    pp.plot_grid(gb, info="c", alpha=0)
+    pg.compute_geometry(gb)
 
-    spe10.create_gb()
-    pg.compute_geometry(spe10.gb)
-
-    setup.data(spe10)
+    setup.data(gb)
 
     discr = pp.MVEM("flow")
 
-    hs = HodgeSolver(spe10.gb, discr)
+    hs = HodgeSolver(gb, discr)
 
-    h_off = Hodge_offline_case2(hs, spe10)
+    h_off = Hodge_offline_case2(hs)
     h_off.save("./results/")
     h_on = Hodge_online(h_off)
 
