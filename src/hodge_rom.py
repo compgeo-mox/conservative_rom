@@ -4,17 +4,17 @@ from hodge_solver import HodgeSolver
 
 
 class Hodge_offline:
-    def __init__(self, hs: HodgeSolver):
+    def __init__(self, hs: HodgeSolver, random_seed = None):
         self.hs = hs
 
-        self.mu_params = self.generate_samples()
+        self.mu_params = self.generate_samples(random_seed)
 
         self.S = self.generate_snapshots()
         self.U, self.Sigma, _ = np.linalg.svd(self.S, full_matrices=False)
 
         self.U = self.truncate_U()
 
-    def generate_samples(self):
+    def generate_samples(self, random_seed = None):
         pass
 
     def generate_snapshots(self):
