@@ -9,6 +9,7 @@ sys.path.insert(0, "../../src/")
 sys.path.insert(0, "src/")
 from hodge_solver import HodgeSolver
 from hodge_rom import *
+import scipy.stats.qmc as qmc
 import reference
 
 import setup
@@ -17,6 +18,7 @@ import setup
     Case 1 is a fixed-dimensional case in 3D using MFEM
 """
 
+random_seed = 0
 
 def main(N=2):
     N *= 4
@@ -29,13 +31,13 @@ def main(N=2):
 
     hs = HodgeSolver(gb, discr)
 
-    h_off = Hodge_offline_case1(hs)
+    h_off = Hodge_offline_case1(hs, random_seed)
     h_off.save("./results/")
     h_on = Hodge_online(h_off)
 
     n_modes = h_off.U.shape[1]
     print("n_modes =", n_modes)
-    h_off.plot_singular_values()
+    h_off.plot_singular_values(1e-7)
 
     # Comparison to a known solution
     mu = np.array([0, 0, 0, 1, 1e3])
@@ -48,12 +50,12 @@ def main(N=2):
 
 
 class Hodge_offline_case1(Hodge_offline):
-    def generate_samples(self):
+    def generate_samples(self, random_seed = None):
 
-        n_snaps = 50
+        n_snaps = 44
         l_bounds = np.array([0, 0, 0, -1, -5])
         u_bounds = np.array([1, 1, 1, 1, 5])
-        samples = qmc.LatinHypercube(l_bounds.size).random(n_snaps)
+        samples = qmc.LatinHypercube(l_bounds.size, seed=random_seed).random(n_snaps)
 
         mu_params = qmc.scale(samples, l_bounds, u_bounds)
         mu_params[:, -1] = 10.0 ** mu_params[:, -1]

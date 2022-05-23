@@ -18,6 +18,7 @@ import setup
     Case 4 is a mixed-dimensional case in 2D using MVEM
 """
 
+random_seed = 0
 
 def main():
     # create the grid bucket
@@ -30,13 +31,13 @@ def main():
 
     hs = HodgeSolver(gb, discr)
 
-    h_off = Hodge_offline_case4(hs)
+    h_off = Hodge_offline_case4(hs, random_seed)
     h_off.save("./results/")
     h_on = Hodge_online(h_off)
 
     n_modes = h_off.U.shape[1]
     print("n_modes =", n_modes)
-    h_off.plot_singular_values()
+    h_off.plot_singular_values(1e-7)
 
     dofs = np.zeros(4, dtype=int)
     dofs[0] = gb.num_cells() + gb.num_faces()
@@ -57,12 +58,12 @@ def main():
 
 
 class Hodge_offline_case4(Hodge_offline):
-    def generate_samples(self):
-        n_snaps = 80
+    def generate_samples(self, random_seed = None):
+        n_snaps = 120
         l_bounds = np.array([0, 0, -5, 3])
         u_bounds = np.array([1, 1, -3, 5])
 
-        samples = qmc.LatinHypercube(l_bounds.size).random(n_snaps)
+        samples = qmc.LatinHypercube(l_bounds.size, seed=random_seed).random(n_snaps)
         mu_params = qmc.scale(samples, l_bounds, u_bounds)
         mu_params[:, -2:] = 10.0 ** mu_params[:, -2:]
 
