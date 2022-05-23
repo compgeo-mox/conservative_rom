@@ -51,15 +51,31 @@ class Hodge_offline:
     def save(self, str):
         np.savez(str + "saved", S=self.S, Sigma=self.Sigma, U=self.U)
 
-    def plot_singular_values(self):
+    def plot_singular_values(self, horizontal_line=None):
+        import matplotlib as mpl
         import matplotlib.pyplot as plt
+
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
+        plt.rc("font", size=25)
+
+        params = {"text.latex.preamble" : r"\usepackage{bm}\usepackage{amsmath}"}
+        plt.rcParams.update(params)
+        mpl.rcParams["axes.linewidth"] = 1.5
 
         plt.plot(np.arange(len(self.Sigma)) + 1.0, self.Sigma, marker="o")
         plt.yscale("log")
         plt.title("Singular values")
-        plt.show()
-        plt.savefig("results/singular_values.pdf", format="pdf", bbox_inches="tight")
 
+        plt.grid(True, linestyle="--", alpha=0.5)
+        plt.xlabel("Index $i$")
+        plt.ylabel("$\sigma_i$")
+
+        if horizontal_line is not None:
+            plt.plot(np.arange(len(self.Sigma)) + 1.0, horizontal_line*np.ones(len(self.Sigma)), linestyle="-.")
+
+        plt.savefig("results/singular_values.pdf", bbox_inches="tight")
+        plt.gcf().clear()
 
 class Hodge_online:
     def __init__(self, h_off: Hodge_offline):
