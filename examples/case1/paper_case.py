@@ -20,6 +20,7 @@ import setup
 
 random_seed = 0
 
+
 def main(N=2):
     N *= 4
     gb = setup.gb(N)
@@ -50,7 +51,7 @@ def main(N=2):
 
 
 class Hodge_offline_case1(Hodge_offline):
-    def generate_samples(self, random_seed = None):
+    def generate_samples(self, random_seed=None):
 
         n_snaps = 44
         l_bounds = np.array([0, 0, 0, -1, -5])
