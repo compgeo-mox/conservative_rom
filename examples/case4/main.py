@@ -20,6 +20,7 @@ import setup
 
 random_seed = 0
 
+
 def main():
     # create the grid bucket
     gb = setup.gb(0.05)
