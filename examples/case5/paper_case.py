@@ -18,7 +18,16 @@ import setup
 """
 
 def main():
-    gb = setup.gb()
+
+    # set the mesh size
+    mesh_size = 1
+    mesh_kwargs = {"mesh_size_frac": mesh_size, "mesh_size_min": mesh_size}
+    gb = setup.gb(mesh_kwargs)
+
+    pp.Exporter(gb, "mesh").write_vtu()
+
+    import pdb; pdb.set_trace()
+
     import pdb; pdb.set_trace()
     pg.compute_geometry(gb)
 

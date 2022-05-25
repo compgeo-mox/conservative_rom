@@ -2,8 +2,15 @@ import numpy as np
 import porepy as pp
 import porepy_mesh_factory as pmf
 
-def gb():
-    return pmf.main.generate("flow_benchmark_3d_case_4")
+def gb(mesh_kwargs):
+    network = pmf.main.generate("flow_benchmark_3d_case_2", only_network=True)
+    c_min, c_max = -0.1, 1.1
+    network.domain = {"xmin": c_min, "xmax": c_max,
+                      "ymin": c_min, "ymax": c_max,
+                      "zmin": c_min, "zmax": c_max,}
+
+    # create the grid bucket
+    return network.mesh(mesh_kwargs)
 
 def data(spe10):
     tol = 1e-8
