@@ -4,7 +4,7 @@ from hodge_solver import HodgeSolver
 
 
 class Hodge_offline:
-    def __init__(self, hs: HodgeSolver, random_seed = None):
+    def __init__(self, hs: HodgeSolver, random_seed=None):
         self.hs = hs
 
         self.mu_params = self.generate_samples(random_seed)
@@ -14,7 +14,7 @@ class Hodge_offline:
 
         self.U = self.truncate_U()
 
-    def generate_samples(self, random_seed = None):
+    def generate_samples(self, random_seed=None):
         pass
 
     def generate_snapshots(self):
@@ -59,7 +59,7 @@ class Hodge_offline:
         plt.rc("font", family="serif")
         plt.rc("font", size=25)
 
-        params = {"text.latex.preamble" : r"\usepackage{bm}\usepackage{amsmath}"}
+        params = {"text.latex.preamble": r"\usepackage{bm}\usepackage{amsmath}"}
         plt.rcParams.update(params)
         mpl.rcParams["axes.linewidth"] = 1.5
 
@@ -72,11 +72,16 @@ class Hodge_offline:
         plt.ylabel("$\sigma_i$")
 
         if horizontal_line is not None:
-            plt.plot(np.arange(len(self.Sigma)) + 1.0, horizontal_line*np.ones(len(self.Sigma)), linestyle="-.")
-            plt.text(1, horizontal_line*2, "$\\varepsilon$")
+            plt.plot(
+                np.arange(len(self.Sigma)) + 1.0,
+                horizontal_line * np.ones(len(self.Sigma)),
+                linestyle="-.",
+            )
+            plt.text(1, horizontal_line * 2, "$\\varepsilon$")
 
         plt.savefig("results/singular_values.pdf", bbox_inches="tight")
         plt.gcf().clear()
+
 
 class Hodge_online:
     def __init__(self, h_off: Hodge_offline):
