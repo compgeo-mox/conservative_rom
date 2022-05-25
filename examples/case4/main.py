@@ -59,7 +59,7 @@ def main():
 
 class Hodge_offline_case4(Hodge_offline):
     def generate_samples(self, random_seed = None):
-        n_snaps = 120
+        n_snaps = 110
         l_bounds = np.array([0, 0, -5, 3])
         u_bounds = np.array([1, 1, -3, 5])
 
