@@ -73,6 +73,7 @@ class Hodge_offline:
 
         if horizontal_line is not None:
             plt.plot(np.arange(len(self.Sigma)) + 1.0, horizontal_line*np.ones(len(self.Sigma)), linestyle="-.")
+            plt.text(1, horizontal_line*2, "$\\varepsilon$")
 
         plt.savefig("results/singular_values.pdf", bbox_inches="tight")
         plt.gcf().clear()
