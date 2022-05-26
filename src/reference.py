@@ -107,3 +107,33 @@ def dim_check(q, p, q_ref, p_ref, hs):
     print("Pressure error: {:.2E}".format(e_p))
     print("Flux error:     {:.2E}".format(e_q))
     print("Mass loss:      {:.2E}".format(e_f))
+
+def export(gb, discr, q, p, file_name):
+
+    pressure = "pressure"
+    flux = "flux"
+    mortar = "mortar"
+
+    permeability = "permeability"
+    flux_P0 = "flux_P0"
+
+    shift_q = 0
+    shift_p = 0
+    for g, d in gb:
+        d[pp.STATE] = {flux: q[shift_q:(shift_q+g.num_faces)],
+                       pressure: p[shift_p:(shift_p+g.num_cells)],
+                       permeability: d[pp.PARAMETERS]["flow"]["second_order_tensor"].values[0, 0, :]}
+        shift_q += g.num_faces
+        shift_p += g.num_cells
+
+    for e, d in gb.edges():
+        d[pp.STATE] = {mortar: np.zeros(d["mortar_grid"].num_cells)}
+
+    # export the P0 flux reconstruction
+    pp.project_flux(gb, discr, flux, flux_P0, mortar)
+
+    # export the reference solution
+    save = pp.Exporter(gb, file_name, folder_name="solution")
+    save.write_vtu([pressure, flux_P0, permeability])
+
+

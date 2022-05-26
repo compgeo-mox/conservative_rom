@@ -49,6 +49,7 @@ def main(N=2):
 
     reference.dim_check(q, p, q_ref, p_ref, hs_full)
 
+    reference.export(gb, discr, q_ref, p_ref, "solution")
 
 class Hodge_offline_case1(Hodge_offline):
     def generate_samples(self, random_seed=None):
