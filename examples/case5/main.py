@@ -48,6 +48,7 @@ def main():
 
     h_off = Hodge_offline_case5(hs)
     h_off.save("./results/")
+    # h_off = load_hs_off(hs)
     h_on = Hodge_online(h_off)
 
     n_modes = h_off.U.shape[1]
@@ -117,6 +118,17 @@ class Hodge_offline_case5(Hodge_offline):
         N = np.argmax(self.Sigma <= threshold)
 
         return self.U[:, :N]
+
+
+def load_hs_off(hs):
+    h_off = Hodge_offline_case5.__new__(Hodge_offline_case5)
+    dir = np.load("./results_long_run/saved.npz")
+    h_off.Sigma = dir["Sigma"]
+    h_off.S = dir["S"]
+    h_off.U = dir["U"]
+    h_off.hs = hs
+
+    return h_off
 
 
 if __name__ == "__main__":
