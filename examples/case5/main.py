@@ -13,6 +13,7 @@ from hodge_rom import *
 import scipy.stats.qmc as qmc
 
 import reference
+import time
 
 import setup
 
@@ -20,12 +21,13 @@ import setup
     Geiger case
 """
 random_seed = 0
+start = time.time()
 
 
 def main():
 
     # set the mesh size
-    mesh_size = 2 ** (-5)
+    mesh_size = 2 ** (-4)
     mesh_kwargs = {"mesh_size_frac": mesh_size, "mesh_size_min": mesh_size}
     gb = setup.gb(mesh_kwargs)
     setup.data(gb)
@@ -37,6 +39,13 @@ def main():
 
     hs = HodgeSolver(gb, discr)
 
+    dofs = np.zeros(3, dtype=int)
+    dofs[0] = gb.num_cells() + gb.num_faces()
+    dofs[1] = gb.num_cells()
+    dofs[2] = hs.curl.shape[1]
+
+    print(dofs)
+
     h_off = Hodge_offline_case5(hs)
     h_off.save("./results/")
     h_on = Hodge_online(h_off)
@@ -45,13 +54,6 @@ def main():
     print("n_modes =", n_modes)
     # print(np.reshape(h_off.Sigma, (-1, 1)))
     h_off.plot_singular_values(1e-7)
-
-    dofs = np.zeros(3, dtype=int)
-    dofs[0] = gb.num_cells() + gb.num_faces()
-    dofs[1] = gb.num_cells()
-    dofs[2] = gb.get_grids()[0].num_edges
-
-    print(dofs)
 
     # Comparison to a known solution
     mu = [1, 0, 0, 1, 1e4]
@@ -66,7 +68,7 @@ def main():
 class Hodge_offline_case5(Hodge_offline):
     def generate_samples(self, random_seed):
 
-        n_snaps = 75
+        n_snaps = 50
         l_bounds = np.array([0, 0, 0, -1, 3])
         u_bounds = np.array([1, 1, 1, 1, 5])
         samples = qmc.LatinHypercube(l_bounds.size, seed=random_seed).random(n_snaps)
@@ -77,6 +79,7 @@ class Hodge_offline_case5(Hodge_offline):
         return mu_params
 
     def adjust_data(self, hs, mu):
+        print(time.time() - start)
 
         aperture = 1e-4
         alpha_0 = mu[:3]
