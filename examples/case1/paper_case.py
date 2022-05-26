@@ -21,7 +21,7 @@ import setup
 random_seed = 0
 
 
-def main(N=2):
+def main(N=4):
     N *= 4
     gb = setup.gb(N)
     pg.compute_geometry(gb)
@@ -31,6 +31,13 @@ def main(N=2):
     discr = pp.RT0("flow")
 
     hs = HodgeSolver(gb, discr)
+
+    dofs = np.zeros(3, dtype=int)
+    dofs[0] = gb.num_cells() + gb.num_faces()
+    dofs[1] = gb.num_cells()
+    dofs[2] = hs.curl.shape[1]
+
+    print(dofs)
 
     h_off = Hodge_offline_case1(hs, random_seed)
     h_off.save("./results/")
