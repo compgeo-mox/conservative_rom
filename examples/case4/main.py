@@ -43,7 +43,7 @@ def main():
     dofs = np.zeros(4, dtype=int)
     dofs[0] = gb.num_cells() + gb.num_faces()
     dofs[1] = gb.num_cells()
-    dofs[2] = gb.get_grids()[0].num_edges
+    dofs[2] = hs.curl.shape[1]
     dofs[3] = n_modes
 
     print(dofs)
@@ -60,7 +60,7 @@ def main():
     reference.export(gb, discr, q_ref, p_ref, "solution")
 
 class Hodge_offline_case4(Hodge_offline):
-    def generate_samples(self, random_seed = None):
+    def generate_samples(self, random_seed=None):
         n_snaps = 110
         l_bounds = np.array([0, 0, -5, 3])
         u_bounds = np.array([1, 1, -3, 5])
