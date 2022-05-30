@@ -54,7 +54,7 @@ def main(N=4):
     q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
     q, p = h_on.solve(mu)
 
-    reference.dim_check(q, p, q_ref, p_ref, hs_full)
+    reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class Hodge_offline_case1(Hodge_offline):

@@ -28,8 +28,6 @@ class HodgeSolver:
         BBt = self.div * self.Ldiv_inv * self.div.T
         self.BBt = sps.linalg.splu(BBt.tocsc())
 
-        # h_scaling = np.mean(g.cell_diameters())**(g.dim - 2)
-
     def compute_mass_matrix(self):
         return pg.hdiv_mass(self.gb, self.discr)
 

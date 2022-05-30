@@ -41,7 +41,7 @@ def main(N=2):
     # q_ref, p_ref = reference.equi_dim(data_key, g, data, discr)
     q_ref, p_ref = reference.full_saddlepoint_system(hs)
 
-    reference.dim_check(q, p, q_ref, p_ref, hs)
+    reference.check(q, p, q_ref, p_ref, hs)
 
 
 if __name__ == "__main__":

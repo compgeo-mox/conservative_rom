@@ -15,7 +15,7 @@ import reference
 import setup
 
 """
-    Case 4 is a mixed-dimensional case in 2D using MVEM
+    Case 2 is a mixed-dimensional case in 2D using MVEM
 """
 
 random_seed = 0
@@ -32,7 +32,7 @@ def main():
 
     hs = HodgeSolver(gb, discr)
 
-    h_off = Hodge_offline_case4(hs, random_seed)
+    h_off = Hodge_offline_case2(hs, random_seed)
     h_off.save("./results/")
     h_on = Hodge_online(h_off)
 
@@ -55,10 +55,10 @@ def main():
     q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
     q, p = h_on.solve(mu)
 
-    reference.dim_check(q, p, q_ref, p_ref, hs_full)
+    reference.check(q, p, q_ref, p_ref, hs_full)
 
 
-class Hodge_offline_case4(Hodge_offline):
+class Hodge_offline_case2(Hodge_offline):
     def generate_samples(self, random_seed=None):
         n_snaps = 110
         l_bounds = np.array([0, 0, -5, 3])

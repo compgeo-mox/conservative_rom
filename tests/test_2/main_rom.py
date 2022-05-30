@@ -55,7 +55,7 @@ def main(N=2):
     # print("Singular values")
     # print(np.reshape(h_off.Sigma, (-1,)))
 
-    reference.dim_check(q, p, q_ref, p_ref, hs_full)
+    reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class HodgeSolver_rom(HodgeSolver):

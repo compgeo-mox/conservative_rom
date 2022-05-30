@@ -27,14 +27,7 @@ def full_saddlepoint_system(hs):
     R = pg.remove_tip_dofs(hs.gb, 1)
     R = sps.block_diag((R, sps.identity(n_p)))
 
-    # M0 = pg.numerics.innerproducts.P0_mass(hs.gb, None)
-    # M0 = sps.linalg.inv(M0)
-
     A = sps.bmat([[hs.mass, -hs.div.T], [hs.div, None]], format="csr")
-    # e0 = sps.linalg.eigs(A, 1, which="LM")[0]
-    # e1 = sps.linalg.eigs(A, 1, sigma = 1e-8)[0]
-
-    # print(np.abs(e0)/np.abs(e1))
     b = np.concatenate((hs.g, hs.f))
 
     sol = R.T * sps.linalg.spsolve(R * A * R.T, R * b)
@@ -96,8 +89,8 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
     return np.concatenate(q_ref), np.concatenate(p_ref)
 
 
-def dim_check(q, p, q_ref, p_ref, hs):
-    M = pg.P0_mass(hs.g)
+def check(q, p, q_ref, p_ref, hs):
+    M = pg.P0_mass(hs.gb, None)
 
     e_p = np.sqrt(np.dot(p - p_ref, M * (p - p_ref)))
     e_p /= np.sqrt(np.dot(p_ref, M * p_ref))

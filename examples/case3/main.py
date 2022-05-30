@@ -18,42 +18,43 @@ import time
 import setup
 
 """
-    Geiger case
+    Case 3 corresponds to a regular fracture network in 3D
 """
 random_seed = 0
 start = time.time()
 
 
 def main():
-
-    # set the mesh size
+    # Generate the Porepy gridbucket
     mesh_size = 2 ** (-4)
     mesh_kwargs = {"mesh_size_frac": mesh_size, "mesh_size_min": mesh_size}
     gb = setup.gb(mesh_kwargs)
     setup.data(gb)
 
-    # pp.Exporter(gb, "mesh").write_vtu()
+    # Compute the edge connectivity
     pg.compute_geometry(gb)
 
     discr = pp.RT0("flow")
 
+    # Generate a three-step solver
     hs = HodgeSolver(gb, discr)
 
+    # Print the number of dofs
     dofs = np.zeros(3, dtype=int)
     dofs[0] = gb.num_cells() + gb.num_faces()
     dofs[1] = gb.num_cells()
     dofs[2] = hs.curl.shape[1]
-
     print(dofs)
 
-    h_off = Hodge_offline_case5(hs)
+    # Offline-online split
+    h_off = Hodge_offline_case3(hs)
     h_off.save("./results/")
-    # h_off = load_hs_off(hs)
     h_on = Hodge_online(h_off)
 
     n_modes = h_off.U.shape[1]
     print("n_modes =", n_modes)
-    # print(np.reshape(h_off.Sigma, (-1, 1)))
+
+    # Plot singular value decomposition
     h_off.plot_singular_values(1e-7)
 
     # Comparison to a known solution
@@ -63,10 +64,10 @@ def main():
     q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
     q, p = h_on.solve(mu)
 
-    reference.dim_check(q, p, q_ref, p_ref, hs_full)
+    reference.check(q, p, q_ref, p_ref, hs_full)
 
 
-class Hodge_offline_case5(Hodge_offline):
+class Hodge_offline_case3(Hodge_offline):
     def generate_samples(self, random_seed):
 
         n_snaps = 50
@@ -118,17 +119,6 @@ class Hodge_offline_case5(Hodge_offline):
         N = np.argmax(self.Sigma <= threshold)
 
         return self.U[:, :N]
-
-
-def load_hs_off(hs):
-    h_off = Hodge_offline_case5.__new__(Hodge_offline_case5)
-    dir = np.load("./results_long_run/saved.npz")
-    h_off.Sigma = dir["Sigma"]
-    h_off.S = dir["S"]
-    h_off.U = dir["U"]
-    h_off.hs = hs
-
-    return h_off
 
 
 if __name__ == "__main__":
