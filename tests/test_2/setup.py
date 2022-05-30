@@ -1,19 +1,17 @@
 import numpy as np
 import porepy as pp
-import porepy_mesh_factory as pmf
 
 
-def gb(mesh_kwargs):
-    network = pmf.main.generate("flow_benchmark_3d_case_2", only_network=True)
-    c_min, c_max = -0.1, 1.1
-    network.domain = {
-        "xmin": c_min,
-        "xmax": c_max,
-        "ymin": c_min,
-        "ymax": c_max,
-        "zmin": c_min,
-        "zmax": c_max,
-    }
+def gb(mesh_size=0.5):
+
+    p = np.array([[0.0, 1.0, 0.0, 1.0], [0.5, 0.5, 0.0, 1.0]])
+    e = np.array([[0, 2], [1, 3]])
+
+    domain = {"xmin": 0, "xmax": 1, "ymin": 0, "ymax": 1}
+    network = pp.FractureNetwork2d(p, e, domain)
+
+    # set the mesh size
+    mesh_kwargs = {"mesh_size_frac": mesh_size, "mesh_size_min": mesh_size}
 
     # create the grid bucket
     return network.mesh(mesh_kwargs)
@@ -22,7 +20,7 @@ def gb(mesh_kwargs):
 def data(gb, data_key="flow"):
 
     # Thickness of fracture
-    aperture = 1e-4
+    aperture = 1e-3
     fracture_perm = 1
 
     for g, d in gb:
@@ -36,8 +34,8 @@ def data(gb, data_key="flow"):
             k *= fracture_perm
         perm = pp.SecondOrderTensor(k)
 
-        # Zero scalar source already integrated in each cell
-        f = 0.0 * g.cell_volumes * specific_volumes
+        # Unitary scalar source already integrated in each cell
+        f = g.cell_volumes * specific_volumes
 
         # Boundary conditions
         b_faces = g.tags["domain_boundary_faces"].nonzero()[0]
@@ -59,6 +57,3 @@ def data(gb, data_key="flow"):
         # dividing by the distance from the matrix to the center of the fracture.
         kn = fracture_perm / (aperture / 2)
         pp.initialize_data(mg, d, data_key, {"normal_diffusivity": kn})
-
-
-# ------------------------------------------------------------------------------#

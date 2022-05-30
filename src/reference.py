@@ -97,9 +97,10 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
 
 
 def dim_check(q, p, q_ref, p_ref, hs):
+    M = pg.P0_mass(hs.g)
 
-    e_p = np.linalg.norm(p - p_ref)
-    e_p /= np.linalg.norm(p_ref)
+    e_p = np.sqrt(np.dot(p - p_ref, M * (p - p_ref)))
+    e_p /= np.sqrt(np.dot(p_ref, M * p_ref))
     e_q = np.sqrt(np.dot(q - q_ref, hs.mass * (q - q_ref)))
     e_q /= np.sqrt(np.dot(q_ref, hs.mass * q_ref))
     e_f = np.linalg.norm(hs.div * q - hs.f)
