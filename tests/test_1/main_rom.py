@@ -9,6 +9,7 @@ sys.path.insert(0, "../../src/")
 sys.path.insert(0, "src/")
 from hodge_solver import HodgeSolver
 from hodge_rom import *
+import scipy.stats.qmc as qmc
 import reference
 
 import setup

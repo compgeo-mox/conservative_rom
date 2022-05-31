@@ -81,8 +81,6 @@ class Hodge_offline_case3(Hodge_offline):
         return mu_params
 
     def adjust_data(self, hs, mu):
-        print(time.time() - start)
-
         aperture = 1e-4
         alpha_0 = mu[:3]
         source = mu[3]

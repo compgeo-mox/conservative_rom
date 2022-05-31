@@ -29,11 +29,11 @@ class HodgeSolver:
         self.BBt = sps.linalg.splu(BBt.tocsc())
 
     def compute_mass_matrix(self):
-        return pg.hdiv_mass(self.gb, self.discr)
+        return pg.face_mass(self.gb, self.discr)
 
     def compute_lumped_matrices(self):
         L = [
-            pg.numerics.innerproducts.lumped_mass_matrix(self.gb, self.discr, n_minus_k)
+            pg.numerics.innerproducts.lumped_mass_matrix(self.gb, n_minus_k, self.discr)
             for n_minus_k in [1, 2, 3]
         ]
 
