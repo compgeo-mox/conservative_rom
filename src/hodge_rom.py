@@ -98,3 +98,14 @@ class Hodge_online:
 
     def create_restriction(self):
         return sps.csr_matrix(self.h_off.U.T)
+
+
+def load_hs_off(hs, hodge_class, file):
+    h_off = hodge_class.__new__(hodge_class)
+    dir = np.load(file)
+    h_off.Sigma = dir["Sigma"]
+    h_off.S = dir["S"]
+    h_off.U = dir["U"]
+    h_off.hs = hs
+
+    return h_off

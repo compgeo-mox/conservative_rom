@@ -9,6 +9,7 @@ sys.path.insert(0, "../../src/")
 sys.path.insert(0, "src/")
 from hodge_solver import HodgeSolver
 from hodge_rom import *
+import scipy.stats.qmc as qmc
 import reference
 
 import setup
@@ -45,7 +46,7 @@ def main(N=2):
     # print("Singular values")
     # print(np.reshape(h_off.Sigma, (-1,)))
 
-    reference.dim_check(q, p, q_ref, p_ref, hs_full)
+    reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class Hodge_offline_case1(Hodge_offline):

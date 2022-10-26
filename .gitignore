@@ -176,3 +176,5 @@ nbproject/
 *.mat
 *.py_o
 *.txt
+
+*.npz

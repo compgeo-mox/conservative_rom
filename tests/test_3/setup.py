@@ -1,28 +1,28 @@
 import numpy as np
 import porepy as pp
-import porepy_mesh_factory as pmf
 
 
-def gb(mesh_kwargs):
-    network = pmf.main.generate("flow_benchmark_3d_case_2", only_network=True)
-    c_min, c_max = -0.1, 1.1
-    network.domain = {
-        "xmin": c_min,
-        "xmax": c_max,
-        "ymin": c_min,
-        "ymax": c_max,
-        "zmin": c_min,
-        "zmax": c_max,
-    }
+def gb():
 
-    # create the grid bucket
-    return network.mesh(mesh_kwargs)
+    # The fractures are specified by their vertices, stored in a numpy array
+    f_1 = pp.Fracture(0.9 * np.array([[0, 0, 0, 0], [1, 0, -1, 0], [0, 1, 0, -1]]))
+    f_2 = pp.Fracture(0.9 * np.array([[-1, 0, 1, 0], [0, 0, 0, 0], [0, 1, 0, -1]]))
+    f_3 = pp.Fracture(0.9 * np.array([[1, 0, -1, 0], [0, 1, 0, -1], [0, 0, 0, 0]]))
+
+    # Also define the domain
+    domain = {"xmin": -1, "xmax": 1, "ymin": -1, "ymax": 1, "zmin": -1, "zmax": 1}
+
+    # Define a 3d FractureNetwork, similar to the 2d one
+    network = pp.FractureNetwork3d([f_1, f_2, f_3], domain=domain)
+    mesh_args = {"mesh_size_frac": 0.3, "mesh_size_min": 0.2}
+
+    return network.mesh(mesh_args)
 
 
 def data(gb, data_key="flow"):
 
     # Thickness of fracture
-    aperture = 1e-4
+    aperture = 1
     fracture_perm = 1
 
     for g, d in gb:
@@ -36,14 +36,14 @@ def data(gb, data_key="flow"):
             k *= fracture_perm
         perm = pp.SecondOrderTensor(k)
 
-        # Zero scalar source already integrated in each cell
-        f = 0.0 * g.cell_volumes * specific_volumes
+        # Unitary scalar source already integrated in each cell
+        f = 1 * g.cell_volumes * specific_volumes
 
         # Boundary conditions
         b_faces = g.tags["domain_boundary_faces"].nonzero()[0]
         bc = pp.BoundaryCondition(g, b_faces, ["dir"] * b_faces.size)
         bc_val = np.zeros(g.num_faces)
-        # bc_val[b_faces] = g.face_centers[1, b_faces]
+        bc_val[b_faces] = np.sin(2 * np.pi * g.face_centers[1, b_faces])
 
         parameters = {
             "second_order_tensor": perm,
@@ -59,6 +59,3 @@ def data(gb, data_key="flow"):
         # dividing by the distance from the matrix to the center of the fracture.
         kn = fracture_perm / (aperture / 2)
         pp.initialize_data(mg, d, data_key, {"normal_diffusivity": kn})
-
-
-# ------------------------------------------------------------------------------#
