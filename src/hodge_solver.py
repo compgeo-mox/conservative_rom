@@ -6,34 +6,41 @@ import pygeon as pg
 
 
 class HodgeSolver:
-    def __init__(self, gb, discr, perform_check=True):
-        self.gb = gb
+    def __init__(self, mdg, discr, perform_check=True):
+        self.mdg = mdg
         self.discr = discr
 
-        self.grad = pg.grad(gb)
-        self.curl = pg.curl(gb)
-        self.div = pg.div(gb)
+        self.grad = pg.grad(mdg)
+        self.curl = pg.curl(mdg)
+        self.div = pg.div(mdg)
+
+        self.cell_mass = pg.cell_mass(mdg)
+        self.face_mass = self.compute_mass_matrix()
+
+        P0 = pg.PwConstants(discr.keyword)
+        self.cell_proj = pg.eval_at_cell_centers(mdg, P0)
+
+        self.cell_div = self.cell_mass * self.div
+
+        self.f = self.assemble_source()
+        self.g = self.assemble_rhs()
 
         # Testing
         if perform_check:
             assert (self.curl * self.grad).nnz == 0
             assert (self.div * self.curl).nnz == 0
 
-        self.mass = self.compute_mass_matrix()
-        self.f = self.assemble_source()
-        self.g = self.assemble_rhs()
-
         self.Ldiv_inv, self.Lcurl, self.Lgrad_inv = self.compute_lumped_matrices()
 
-        BBt = self.div * self.Ldiv_inv * self.div.T
+        BBt = (self.cell_div) * self.Ldiv_inv * (self.cell_div).T
         self.BBt = sps.linalg.splu(BBt.tocsc())
 
     def compute_mass_matrix(self):
-        return pg.face_mass(self.gb, self.discr)
+        return pg.face_mass(self.mdg, self.discr)
 
     def compute_lumped_matrices(self):
         L = [
-            pg.numerics.innerproducts.lumped_mass_matrix(self.gb, n_minus_k, self.discr)
+            pg.numerics.innerproducts.lumped_mass_matrix(self.mdg, n_minus_k)
             for n_minus_k in [1, 2, 3]
         ]
 
@@ -48,14 +55,14 @@ class HodgeSolver:
         return self.step3(q_f, sigma)
 
     def step1(self):
-        p_f = self.BBt.solve(self.f)
-        q_f = self.Ldiv_inv * self.div.T * p_f
+        p_f = self.cell_proj * self.BBt.solve(self.f)
+        q_f = self.Ldiv_inv * (self.cell_div).T * p_f
         return q_f
 
     def step2(self, q_f, linalg_solve=sps.linalg.spsolve):
-        A = self.curl.T * self.mass * self.curl
+        A = self.curl.T * self.face_mass * self.curl
         A += (self.Lcurl * self.grad) * self.Lgrad_inv * (self.Lcurl * self.grad).T
-        b = self.curl.T * (self.g - self.mass * q_f)
+        b = self.curl.T * (self.g - self.face_mass * q_f)
 
         R = self.create_restriction()
 
@@ -66,7 +73,8 @@ class HodgeSolver:
     def step3(self, q_f, sigma):
         q = q_f + self.curl * sigma
 
-        p = self.BBt.solve(self.div * self.Ldiv_inv * (self.mass * q - self.g))
+        rhs = self.cell_div * self.Ldiv_inv * (self.face_mass * q - self.g)
+        p = self.cell_proj * self.BBt.solve(rhs)
         return q, p
 
     def create_restriction(self):
@@ -79,23 +87,23 @@ class HodgeSolver:
 
         else:  # All other cases
             # Create restriction that removes tip dofs
-            R = pg.remove_tip_dofs(self.gb, 2)
+            R = pg.remove_tip_dofs(self.mdg, 2)
 
         return R
 
     def assemble_source(self):
         f = []
-        for _, d in self.gb:
-            f.append(d[pp.PARAMETERS]["flow"]["source"])
+        for _, data in self.mdg.subdomains(return_data=True):
+            f.append(data[pp.PARAMETERS]["flow"]["source"])
 
         return np.concatenate(f)
 
     def assemble_rhs(self):
         rhs = []
-        for g, d in self.gb:
-            bc_values = d[pp.PARAMETERS]["flow"]["bc_values"].copy()
-            b_faces = np.where(g.tags["domain_boundary_faces"])[0]
-            signs = [g.cell_faces.tocsr()[face, :].data[0] for face in b_faces]
+        for sd, data in self.mdg.subdomains(return_data=True):
+            bc_values = data[pp.PARAMETERS]["flow"]["bc_values"].copy()
+            b_faces = np.where(sd.tags["domain_boundary_faces"])[0]
+            signs = [sd.cell_faces.tocsr()[face, :].data[0] for face in b_faces]
 
             bc_values[b_faces] *= -np.array(signs)
 

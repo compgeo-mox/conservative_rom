@@ -24,27 +24,27 @@ def equi_dim(data_key, g, data, discr):
 def full_saddlepoint_system(hs):
     n_p, n_q = hs.div.shape
 
-    R = pg.remove_tip_dofs(hs.gb, 1)
+    R = pg.remove_tip_dofs(hs.mdg, 1)
     R = sps.block_diag((R, sps.identity(n_p)))
 
-    A = sps.bmat([[hs.mass, -hs.div.T], [hs.div, None]], format="csr")
+    A = sps.bmat([[hs.mass, -hs.cell_div.T], [hs.cell_div, None]], format="csr")
     b = np.concatenate((hs.g, hs.f))
 
     sol = R.T * sps.linalg.spsolve(R * A * R.T, R * b)
 
-    return sol[:n_q], sol[n_q:]
+    return sol[:n_q], hs.cell_proj * sol[n_q:]
 
 
-def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
+def mixed_dim(data_key, mdg, discr, q_name="flux", p_name="pressure"):
 
     rhs_discr = pp.DualScalarSource(data_key)
     coupling_discr = pp.RobinCoupling(data_key, discr)
 
     var_name = "flux_pressure"
     mortar_name = "mortar_flux"
-    for g, d in gb:
-        d[pp.PRIMARY_VARIABLES] = {var_name: {"cells": 1, "faces": 1}}
-        d[pp.DISCRETIZATION] = {var_name: {"diffusive": discr, "source": rhs_discr}}
+    for _, data in self.mdg.subdomains(return_data=True):
+        data[pp.PRIMARY_VARIABLES] = {var_name: {"cells": 1, "faces": 1}}
+        data[pp.DISCRETIZATION] = {var_name: {"diffusive": discr, "source": rhs_discr}}
 
     for e, d in gb.edges():
         g1, g2 = gb.nodes_of_edge(e)
@@ -53,7 +53,7 @@ def mixed_dim(data_key, gb, discr, q_name="flux", p_name="pressure"):
             "lambda": {
                 g1: (var_name, "diffusive"),
                 g2: (var_name, "diffusive"),
-                e: (mortar_name, coupling_discr),
+                e: (mortar_name_, coupling_discr),
             }
         }
 
