@@ -1,26 +1,26 @@
 import numpy as np
 import porepy as pp
+import pygeon as pg
 
-
-def gb(N):
+def mdg(N):
     # 3D
-    g = pp.StructuredTetrahedralGrid([N] * 3, [1] * 3)
+    sd = pp.StructuredTetrahedralGrid([N] * 3, [1] * 3)
+    mdg = pp.meshing.subdomains_to_mdg([[sd]])
+    pg.convert_from_pp(mdg)
+    mdg.compute_geometry()
 
-    # Set up grid bucket consisting of one grid
-    g.compute_geometry()
-    return pp.meshing.grid_list_to_grid_bucket([[g]])
+    return mdg
 
-
-def data(gb):
-    for g, d in gb:
+def data(mdg):
+    for sd, data in mdg.subdomains(return_data=True):
         # Set up parameters
-        perm = pp.SecondOrderTensor(np.ones(g.num_cells))
-        b_faces = g.tags["domain_boundary_faces"].nonzero()[0]
-        bc = pp.BoundaryCondition(g, b_faces, ["dir"] * b_faces.size)
-        bc_val = np.zeros(g.num_faces)
-        # bc_val[b_faces] = np.sin(2 * np.pi * g.face_centers[1, b_faces])
+        perm = pp.SecondOrderTensor(np.ones(sd.num_cells))
+        b_faces = sd.tags["domain_boundary_faces"].nonzero()[0]
+        bc = pp.BoundaryCondition(sd, b_faces, ["dir"] * b_faces.size)
+        bc_val = np.zeros(sd.num_faces)
+        # bc_val[b_faces] = np.sin(2 * np.pi * sd.face_centers[1, b_faces])
 
-        f = g.cell_volumes
+        f = np.ones(sd.num_cells)
 
         parameters = {
             "second_order_tensor": perm,
@@ -28,4 +28,4 @@ def data(gb):
             "bc_values": bc_val,
             "source": f,
         }
-        pp.initialize_default_data(g, d, "flow", parameters)
+        pp.initialize_default_data(sd, data, "flow", parameters)
