@@ -17,9 +17,6 @@ class HodgeSolver:
         self.cell_mass = pg.cell_mass(mdg)
         self.face_mass = self.compute_mass_matrix()
 
-        P0 = pg.PwConstants(discr.keyword)
-        self.cell_proj = pg.eval_at_cell_centers(mdg, P0)
-
         self.cell_div = self.cell_mass * self.div
 
         self.f = self.assemble_source()
@@ -39,15 +36,34 @@ class HodgeSolver:
         return pg.face_mass(self.mdg, self.discr)
 
     def compute_lumped_matrices(self):
-        L = [
+        L = np.empty(3, dtype=object)
+        L[0] = pg.numerics.innerproducts.lumped_mass_matrix(self.mdg, 1, self.discr)
+        L[1:3] = [
             pg.numerics.innerproducts.lumped_mass_matrix(self.mdg, n_minus_k)
-            for n_minus_k in [1, 2, 3]
+            for n_minus_k in [2, 3]
         ]
 
-        L[0].data = 1.0 / L[0].data
-        L[2].data = 1.0 / L[2].data
+        L[0].data = 1.0 / L[0].data  # Hdiv
+        # if self.mdg.dim_max() == 3:
+        #     L[1] = self.compute_lumped_matrix_ridge()  # Hcurl
+        L[2].data = 1.0 / L[2].data  # Hgrad
 
         return L
+
+    def compute_lumped_matrix_ridge(self):
+        blocks = []
+        for sd in self.mdg.subdomains():
+            tangents = sd.nodes * sd.ridge_peaks
+            h = np.linalg.norm(tangents, axis=0)
+
+            cell_ridges = np.abs(sd.face_ridges) * np.abs(sd.cell_faces)
+            cell_ridges.data[:] = 1.0
+
+            volumes = cell_ridges * sd.cell_volumes
+
+            blocks.append(sps.diags(volumes / (h * h)))
+
+        return sps.block_diag(blocks)
 
     def solve(self, linalg_solve=sps.linalg.spsolve):
         q_f = self.step1()
@@ -55,7 +71,7 @@ class HodgeSolver:
         return self.step3(q_f, sigma)
 
     def step1(self):
-        p_f = self.cell_proj * self.BBt.solve(self.f)
+        p_f = self.BBt.solve(self.f)
         q_f = self.Ldiv_inv * (self.cell_div).T * p_f
         return q_f
 
@@ -74,7 +90,7 @@ class HodgeSolver:
         q = q_f + self.curl * sigma
 
         rhs = self.cell_div * self.Ldiv_inv * (self.face_mass * q - self.g)
-        p = self.cell_proj * self.BBt.solve(rhs)
+        p = self.BBt.solve(rhs)
         return q, p
 
     def create_restriction(self):

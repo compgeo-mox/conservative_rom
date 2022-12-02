@@ -2,6 +2,7 @@ import numpy as np
 import porepy as pp
 import pygeon as pg
 
+
 def mdg(N):
     # 3D
     sd = pp.StructuredTetrahedralGrid([N] * 3, [1] * 3)
@@ -10,6 +11,7 @@ def mdg(N):
     mdg.compute_geometry()
 
     return mdg
+
 
 def data(mdg):
     for sd, data in mdg.subdomains(return_data=True):

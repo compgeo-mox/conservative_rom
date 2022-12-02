@@ -13,7 +13,6 @@ from hodge_rom import *
 import scipy.stats.qmc as qmc
 
 import reference
-import time
 
 import setup
 
@@ -21,28 +20,28 @@ import setup
     Case 3 corresponds to a regular fracture network in 3D
 """
 random_seed = 0
-start = time.time()
 
 
 def main():
     # Generate the Porepy gridbucket
     mesh_size = 2 ** (-4)
     mesh_kwargs = {"mesh_size_frac": mesh_size, "mesh_size_min": mesh_size}
-    gb = setup.gb(mesh_kwargs)
-    setup.data(gb)
+    mdg = setup.gb(mesh_kwargs)
+    setup.data(mdg)
 
     # Compute the edge connectivity
-    pg.compute_geometry(gb)
+    pg.convert_from_pp(mdg)
+    mdg.compute_geometry()
 
-    discr = pp.RT0("flow")
+    discr = pg.RT0("flow")
 
     # Generate a three-step solver
-    hs = HodgeSolver(gb, discr)
+    hs = HodgeSolver(mdg, discr)
 
     # Print the number of dofs
     dofs = np.zeros(3, dtype=int)
-    dofs[0] = gb.num_cells() + gb.num_faces()
-    dofs[1] = gb.num_cells()
+    dofs[0] = mdg.num_subdomain_cells() + mdg.num_subdomain_faces()
+    dofs[1] = mdg.num_subdomain_cells()
     dofs[2] = hs.curl.shape[1]
     print(dofs)
 
@@ -86,30 +85,30 @@ class Hodge_offline_case3(Hodge_offline):
         source = mu[3]
         fracture_perm = mu[4]
 
-        for g, d in hs.gb:
-            if g.dim < hs.gb.dim_max():
-                specific_volumes = np.power(aperture, hs.gb.dim_max() - g.dim)
+        for sd, d in hs.mdg.subdomains(return_data=True):
+            if sd.dim < hs.mdg.dim_max():
+                specific_volumes = np.power(aperture, hs.mdg.dim_max() - sd.dim)
 
-                k = fracture_perm * np.ones(g.num_cells) * specific_volumes
+                k = fracture_perm * np.ones(sd.num_cells) * specific_volumes
                 d["parameters"]["flow"]["second_order_tensor"] = pp.SecondOrderTensor(k)
 
-                f = specific_volumes * g.cell_volumes * source
+                f = specific_volumes * np.ones(sd.num_cells) * source
                 d["parameters"]["flow"]["source"] = f
 
             else:
-                b_faces = g.tags["domain_boundary_faces"]
-                f_centers = g.face_centers[:, b_faces]
+                b_faces = sd.tags["domain_boundary_faces"]
+                f_centers = sd.face_centers[:, b_faces]
 
-                values = np.zeros(g.num_faces)
+                values = np.zeros(sd.num_faces)
                 values[b_faces] = np.dot(alpha_0, f_centers)
 
                 d["parameters"]["flow"]["bc_values"] = values
 
-        for e, d in hs.gb.edges():
+        for e, d in hs.mdg.interfaces(return_data=True):
             kn = fracture_perm / (aperture / 2)
             d["parameters"]["flow"]["normal_diffusivity"] = kn
 
-        hs.mass = hs.compute_mass_matrix()
+        hs.face_mass = hs.compute_mass_matrix()
         hs.f = hs.assemble_source()
         hs.g = hs.assemble_rhs()
 

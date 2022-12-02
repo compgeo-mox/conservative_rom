@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
 from hodge_solver import HodgeSolver
+import time
 
 
 class Hodge_offline:
@@ -87,12 +88,16 @@ class Hodge_online:
     def __init__(self, h_off: Hodge_offline):
         self.h_off = h_off
 
-    def solve(self, mu, linalg_solve=...):
+    def solve(self, mu, linalg_solve=..., show_time=True):
         hs_temp = self.h_off.scaled_copy(mu)
 
         hs_temp.create_restriction = self.create_restriction
 
+        timer = time.time()
         q, p = hs_temp.solve()
+        timer = time.time() - timer
+        if show_time:
+            print("Time taken for RBM solve: ", timer)
 
         return q, p
 

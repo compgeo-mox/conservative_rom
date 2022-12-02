@@ -19,20 +19,20 @@ def gb(mesh_kwargs):
     return network.mesh(mesh_kwargs)
 
 
-def data(gb, data_key="flow"):
+def data(mdg, data_key="flow"):
 
     # Thickness of fracture
     aperture = 1e-4
     fracture_perm = 1
 
-    for g, d in gb:
+    for g, d in mdg.subdomains(return_data=True):
         # The concept of specific volumes accounts for the thickness
         # of the fracture, which is collapsed in the mixed-dimensional
         # model.
-        specific_volumes = np.power(aperture, gb.dim_max() - g.dim)
+        specific_volumes = np.power(aperture, mdg.dim_max() - g.dim)
         # Permeability
         k = np.ones(g.num_cells) * specific_volumes
-        if g.dim < gb.dim_max():
+        if g.dim < mdg.dim_max():
             k *= fracture_perm
         perm = pp.SecondOrderTensor(k)
 
@@ -53,8 +53,7 @@ def data(gb, data_key="flow"):
         }
         pp.initialize_data(g, d, data_key, parameters)
 
-    for e, d in gb.edges():
-        mg = d["mortar_grid"]
+    for mg, d in mdg.interfaces(return_data=True):
         # Division through aperture/2 may be thought of as taking the gradient, i.e.
         # dividing by the distance from the matrix to the center of the fracture.
         kn = fracture_perm / (aperture / 2)

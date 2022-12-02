@@ -22,7 +22,7 @@ random_seed = 0
 
 
 def main(N=4):
-    N *= 1#4
+    N *= 4
     mdg = setup.mdg(N)
 
     setup.data(mdg)
@@ -53,8 +53,7 @@ def main(N=4):
     q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
     q, p = h_on.solve(mu)
 
-    import pdb; pdb.set_trace()
-    #reference.check(q, p, q_ref, p_ref, hs_full)
+    reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class Hodge_offline_case1(Hodge_offline):
@@ -84,7 +83,7 @@ class Hodge_offline_case1(Hodge_offline):
             return pp.SecondOrderTensor(K)
 
         def source(sd):
-            return sd.cell_volumes * f_0
+            return f_0 * np.ones(sd.num_cells)
 
         def bc_values(sd):
             b_faces = sd.tags["domain_boundary_faces"]
@@ -99,7 +98,7 @@ class Hodge_offline_case1(Hodge_offline):
             data["parameters"]["flow"]["source"] = source(sd)
             data["parameters"]["flow"]["bc_values"] = bc_values(sd)
 
-        hs.mass = hs.compute_mass_matrix()
+        hs.face_mass = hs.compute_mass_matrix()
         hs.f = hs.assemble_source()
         hs.g = hs.assemble_rhs()
 
