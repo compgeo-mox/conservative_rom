@@ -23,14 +23,16 @@ random_seed = 0
 
 def main():
     # create the grid bucket
-    gb = setup.gb(0.05)
-    pg.compute_geometry(gb)
+    mdg = setup.gb(0.05)
 
-    setup.data(gb)
+    pg.convert_from_pp(mdg)
+    mdg.compute_geometry()
 
-    discr = pp.MVEM("flow")
+    setup.data(mdg)
 
-    hs = HodgeSolver(gb, discr)
+    discr = pg.MVEM("flow")
+
+    hs = HodgeSolver(mdg, discr)
 
     h_off = Hodge_offline_case2(hs, random_seed)
     h_off.save("./results/")
@@ -41,8 +43,8 @@ def main():
     h_off.plot_singular_values(1e-7)
 
     dofs = np.zeros(4, dtype=int)
-    dofs[0] = gb.num_cells() + gb.num_faces()
-    dofs[1] = gb.num_cells()
+    dofs[0] = mdg.num_subdomain_cells() + mdg.num_subdomain_faces()
+    dofs[1] = mdg.num_subdomain_cells()
     dofs[2] = hs.curl.shape[1]
     dofs[3] = n_modes
 
@@ -76,20 +78,20 @@ class Hodge_offline_case2(Hodge_offline):
         k_low = mu[2]
         k_high = mu[3]
 
-        setup.set_perm(hs.gb, k_low, k_high)
+        setup.set_perm(hs.mdg, k_low, k_high)
 
-        def bc_values(g):
-            b_faces = g.tags["domain_boundary_faces"]
-            f_centers = g.face_centers[:, b_faces]
+        def bc_values(sd):
+            b_faces = sd.tags["domain_boundary_faces"]
+            f_centers = sd.face_centers[:, b_faces]
 
-            values = np.zeros(g.num_faces)
+            values = np.zeros(sd.num_faces)
             values[b_faces] = np.dot(alpha_0, f_centers)
             return values
 
-        for g, d in hs.gb:
-            d["parameters"]["flow"]["bc_values"] = bc_values(g)
+        for sd, d in hs.mdg.subdomains(return_data=True):
+            d["parameters"]["flow"]["bc_values"] = bc_values(sd)
 
-        hs.mass = hs.compute_mass_matrix()
+        hs.face_mass = hs.compute_mass_matrix()
         # hs.f = hs.assemble_source()
         hs.g = hs.assemble_rhs()
 
