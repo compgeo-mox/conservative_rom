@@ -46,14 +46,23 @@ def main(N=4):
     print("n_modes =", n_modes)
     h_off.plot_singular_values(1e-7)
 
-    # Comparison to a known solution
-    mu = np.array([0, 0, 0, 1, 1e3])
-    hs_full = h_off.scaled_copy(mu)
+    # Comparison to known solutions
+    num_sim = 400
+    l_bounds = np.array([0, 0, 0, -1, -5])
+    u_bounds = np.array([1, 1, 1, 1, 5])
 
-    q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
-    q, p = h_on.solve(mu)
+    samples = qmc.LatinHypercube(l_bounds.size, seed=random_seed).random(num_sim)
+    mu_params = qmc.scale(samples, l_bounds, u_bounds)
+    mu_params[:, -1] = 10.0 ** mu_params[:, -1]
 
-    reference.check(q, p, q_ref, p_ref, hs_full)
+    for mu in mu_params:
+        print("perform simulation for the following parameters")
+        hs_full = h_off.scaled_copy(mu)
+
+        q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
+        q, p = h_on.solve(mu)
+
+        reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class Hodge_offline_case1(Hodge_offline):

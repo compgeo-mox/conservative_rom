@@ -23,7 +23,7 @@ random_seed = 0
 
 def main():
     # create the grid bucket
-    mdg = setup.gb(0.05)
+    mdg = setup.gb(0.01)
 
     pg.convert_from_pp(mdg)
     mdg.compute_geometry()
@@ -51,13 +51,18 @@ def main():
     print(dofs)
 
     # Comparison to a known solution
-    mu = [0, 1, 1e-4, 1e4]
-    hs_full = h_off.scaled_copy(mu)
+    num_sim = 20
+    for k_p_exp in np.linspace(3, 5, num_sim):
+        for k_m_exp in np.linspace(-5, -3, num_sim):
+            print("perform simulation for the following parameters", k_p_exp, k_m_exp)
 
-    q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
-    q, p = h_on.solve(mu)
+            mu = [0, 1, np.power(10, k_m_exp), np.power(10, k_p_exp)]
+            hs_full = h_off.scaled_copy(mu)
 
-    reference.check(q, p, q_ref, p_ref, hs_full)
+            q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
+            q, p = h_on.solve(mu)
+
+            reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class Hodge_offline_case2(Hodge_offline):

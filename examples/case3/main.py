@@ -57,13 +57,18 @@ def main():
     h_off.plot_singular_values(1e-7)
 
     # Comparison to a known solution
-    mu = [1, 0, 0, 1, 1e4]
-    hs_full = h_off.scaled_copy(mu)
+    num_sim = 20
+    for k_exp in np.linspace(3, 5, num_sim):
+        for f in np.linspace(-1, 1, num_sim):
+            print("perform simulation for the following parameters", k_exp, f)
 
-    q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
-    q, p = h_on.solve(mu)
+            mu = [1, 0, 0, f, np.power(10, k_exp)]
+            hs_full = h_off.scaled_copy(mu)
 
-    reference.check(q, p, q_ref, p_ref, hs_full)
+            q_ref, p_ref = reference.full_saddlepoint_system(hs_full)
+            q, p = h_on.solve(mu)
+
+            reference.check(q, p, q_ref, p_ref, hs_full)
 
 
 class Hodge_offline_case3(Hodge_offline):
